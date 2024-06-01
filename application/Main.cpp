@@ -14,7 +14,7 @@
 #include "infra/include/network/NetworkThreadPool.h"
 #include "infra/include/thread/WorkThreadPool.h"
 #include "configManager/include/IConfigManager.h"
-
+#include "OacClientTest.h"
 
 int main(int argc, char* argv[]) {
 
@@ -28,6 +28,11 @@ int main(int argc, char* argv[]) {
     infof("bronco start............\n");
 
     infra::network_init();
+    infra::NetworkThreadPool::instance()->init(4);
+    infra::WorkThreadPool::instance()->init(4);
+
+    OacClientTest oac_client;
+    oac_client.init();
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
