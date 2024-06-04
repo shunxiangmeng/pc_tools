@@ -14,7 +14,9 @@
 #include "infra/include/network/NetworkThreadPool.h"
 #include "infra/include/thread/WorkThreadPool.h"
 #include "configManager/include/IConfigManager.h"
+#include "private/include/IPrivClient.h"
 #include "OacClientTest.h"
+#include "MediaClient.h"
 
 int main(int argc, char* argv[]) {
 
@@ -32,7 +34,12 @@ int main(int argc, char* argv[]) {
     infra::WorkThreadPool::instance()->init(4);
 
     OacClientTest oac_client;
-    oac_client.init();
+    //oac_client.init();
+
+
+
+    MediaClient media_client;
+    media_client.init();
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
