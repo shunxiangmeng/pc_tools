@@ -12,7 +12,7 @@ message(STATUS "****************************************************************
 set(CMAKE_CXX_STANDARD 14)
 
 #编译详情
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 #禁止编译警告：warning C4819：该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
 add_compile_options(/wd4819)
@@ -22,6 +22,7 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)  # 禁止C4996警告
 
 #依赖库信息
 set(APP_DEPEND_LIBS)
+include(${PROJECT_SOURCE_DIR}/playsdk/Linklib.cmake)
 
 #头文件路径
 set(APP_INCLUDE_DIRS)
@@ -34,6 +35,7 @@ include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles)
 include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles/common/libmov/include)
 include_directories(${PROJECT_SOURCE_DIR}/common/middleware)
 include_directories(${PROJECT_SOURCE_DIR}/applicaton)
+include_directories(${PROJECT_SOURCE_DIR}/playsdk/third_party/ffmpeg/include)
 
 #源文件
 set(APP_SOURCE_FILES)
@@ -43,6 +45,7 @@ add_subdirectory(common/infra)
 add_subdirectory(common/common)
 add_subdirectory(common/thirdparty)
 add_subdirectory(common/middleware)
+add_subdirectory(playsdk)
 
 file(GLOB_RECURSE APPLICATION_SOURCE_FILES application/*.cpp mediasource/*.cpp)
 file(GLOB_RECURSE APPLICATION_SOURCE_HEADER_FILES application/*.h mediasource/*.h)
