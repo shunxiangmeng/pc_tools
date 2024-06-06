@@ -1,13 +1,13 @@
 file(GLOB_RECURSE PLAYSDK_SOURCE_FILES src/*.cpp)
-file(GLOB_RECURSE PLAYSDK_SOURCE_HEADER_FILES src/*.h include/*.h third_party/*.h)
+file(GLOB_RECURSE PLAYSDK_SOURCE_HEADER_FILES src/*.h include/*.h thirdparty/*.h)
 
-file(GLOB_RECURSE GLAD_SOURCE_FILES third_party/glad/*.c)
+file(GLOB_RECURSE GLAD_SOURCE_FILES thirdparty/glad/*.c)
 
 set(APP_SOURCE_FILES ${APP_SOURCE_FILES} ${PLAYSDK_SOURCE_FILES} ${GLAD_SOURCE_FILES} PARENT_SCOPE)
 set(APP_SOURCE_HEADER_FILES ${APP_SOURCE_HEADER_FILES} ${PLAYSDK_SOURCE_HEADER_FILES} PARENT_SCOPE)
 
 set(APP_INCLUDE_DIRS ${APP_INCLUDE_DIRS} 
-    ${CMAKE_CURRENT_SOURCE_DIR}/playsdk/third_party/ffmpeg/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}/playsdk/thirdparty/ffmpeg/include/
     PARENT_SCOPE)
 
 #多线程静态库

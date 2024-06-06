@@ -11,7 +11,7 @@
 #include "infra/include/Logger.h"
 
 #include "glad/glad.h"
-#include "playsdk/third_party/glfw/include/glfw3.h"
+#include "playsdk/thirdparty/glfw/include/glfw3.h"
 
 #include "../render/shaders.h"
 
