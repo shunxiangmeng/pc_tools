@@ -31,7 +31,7 @@ public:
 
 
 private:
-    bool initShaders();
+    
 
 private:
     AVCodecContext* av_codec_context_ = nullptr;

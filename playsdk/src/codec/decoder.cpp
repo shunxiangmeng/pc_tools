@@ -10,12 +10,6 @@
 #include "decoder.h"
 #include "infra/include/Logger.h"
 
-#include "glad/glad.h"
-#include "playsdk/thirdparty/glfw/include/glfw3.h"
-
-#include "../render/shaders.h"
-
-
 namespace playsdk {
 
 Decoder::Decoder() {
@@ -43,32 +37,6 @@ bool Decoder::init() {
         return false;
     }
     infof("init decoder succeed\n");
-
-
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        errorf("Failed to create GLFW window\n");
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        errorf("Failed to initialize GLAD\n");
-        return false;
-    }
-
-    initShaders();
-
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     return true;
 };
 
@@ -91,25 +59,7 @@ bool Decoder::inputMediaFrame(MediaFrame frame) {
     return true;
 }
 
-bool Decoder::initShaders() {
-    GLint vertex_compiled, fragment_compiled, linked;
 
-    /*GLint shader_vertex = glCreateShader(GL_VERTEX_SHADER);
-    GLint shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
-
-    glShaderSource(shader_vertex, 1, &g_vertex_shader, NULL);
-    glCompileShader(shader_vertex);
-    glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &vertex_compiled);
-
-    glShaderSource(shader_fragment, 1, &g_fragment_shader, NULL);
-    glCompileShader(shader_fragment);
-    glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &fragment_compiled);
-
-    glCreateProgram();
-    */
-
-    return true;
-}
 
 
 }

@@ -3,7 +3,7 @@
 
 MediaClient::MediaClient() {
     client_ = IPrivClient::create();
-    decoder_ = std::make_shared<playsdk::Decoder>();
+    playsdk_ = playsdk::IPlaysdk::create();
 }
 
 bool MediaClient::init() {
@@ -13,7 +13,7 @@ bool MediaClient::init() {
     //}
     //client_->startPreview(0, 0, IPrivClient::OnFrameProc(&MediaClient::onMediaFrame, this));
 
-    decoder_->init();
+    playsdk_->init();
 
     return true;
 }

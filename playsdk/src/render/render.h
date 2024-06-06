@@ -8,8 +8,36 @@
  * Note        : 
  ************************************************************************/
 #pragma once
+#include "glad/glad.h"
+#include "glfw/include/glfw3.h"
+#include "infra/include/thread/Thread.h"
 
 namespace playsdk {
 
-    
+class Render : public infra::Thread {
+public:
+    Render();
+    ~Render();
+
+    bool initial();
+
+private:
+    virtual void run() override;
+
+    GLFWwindow* initWindowEnvironment();
+
+    bool initShaders();
+    bool checkShader(GLint shader);
+    bool CheckProgram(GLuint prog);
+
+
+private:
+    int32_t window_width_;
+    int32_t window_height_;
+
+    GLuint gl_program_{0};
+    GLuint gl_vao_{0};
+    GLuint gl_textureid_[3];
+};
+
 }

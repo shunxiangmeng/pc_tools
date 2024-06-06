@@ -1,6 +1,6 @@
 #include <memory>
 #include "private/include/IPrivClient.h"
-#include "playsdk/src/codec/decoder.h"
+#include "playsdk/include/IPlaysdk.h"
 
 class MediaClient {
 public:
@@ -11,6 +11,6 @@ private:
     void onMediaFrame(MediaFrameType type, MediaFrame& frame);
 private:
     std::shared_ptr<IPrivClient> client_;
-    std::shared_ptr<playsdk::Decoder> decoder_;
+    std::shared_ptr<playsdk::IPlaysdk> playsdk_;
     
 };
