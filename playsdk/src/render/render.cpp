@@ -22,7 +22,15 @@ Render::~Render() {
 }
 
 bool Render::initial() {
-    return infra::Thread::start();
+    init_promise_ = std::make_shared<std::promise<bool>>();
+    std::future<bool> future = init_promise_->get_future();
+    infra::Thread::start();
+    auto wait_result = future.wait_for(std::chrono::milliseconds(200));
+    if (wait_result == std::future_status::timeout) {
+        errorf("init timeout\n");
+        return false;
+    }
+    return future.get();
 }
 
 static const GLfloat s_vertices_coord[] = {
@@ -163,13 +171,13 @@ GLFWwindow* Render::initWindowEnvironment() {
     GLFWwindow* window = glfwCreateWindow(window_width_, window_height_, "playsdk", NULL, NULL);
     if (window == nullptr) {
         errorf("Failed to create GLFW window\n");
-        glfwTerminate();
         return nullptr;
     }
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         errorf("Failed to initialize GLAD\n");
+        glfwTerminate();
         return nullptr;
     }
     return window;
@@ -185,6 +193,9 @@ void Render::renderVideoFrame() {
         int32_t width = frame.frame_->width;
         int32_t height = frame.frame_->height;
 
+        glUseProgram(gl_program_);
+        glBindVertexArray(gl_vao_);
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, gl_textureid_[0]);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, frame.frame_->data[0]);
@@ -198,13 +209,43 @@ void Render::renderVideoFrame() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width / 2, height / 2, 0, GL_RED, GL_UNSIGNED_BYTE, frame.frame_->data[2]);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_LINE_LOOP, 6, GL_UNSIGNED_INT, 0);
     }
 }
 
 void Render::run() {
     warnf("render thread start\n");
-    GLFWwindow* window = initWindowEnvironment();
-    initShaders();
+    bool init_reesult = false;
+    GLFWwindow* window = nullptr;
+    do {
+        window = initWindowEnvironment();
+        if (window == nullptr) {
+            break;
+        }
+        if (!initShaders()) {
+            glfwTerminate();
+            break;
+        }
+        if (!polyon_.initialize()) {
+            glfwTerminate();
+            break;
+        }
+        init_reesult = true;
+    } while (0);
+    
+    init_promise_->set_value(std::move(init_reesult));
+
+    std::vector<std::vector<Position>> polyons;
+    std::vector<Position> polyon;
+    polyon.push_back({ 0.1f, 0.0f, 0.0f});
+    polyon.push_back({ 1.0f, 0.0f, 0.0f });
+    polyon.push_back({ 0.9f, 0.9f, 0.0f });
+    polyon.push_back({ 0.0f, 1.0f, 0.0f });
+
+    polyons.push_back(polyon);
+
+    polyon_.setPointLines(polyons);
+
     while (!glfwWindowShouldClose(window) && running()) {
         // input
         processInput(window);
@@ -213,10 +254,10 @@ void Render::run() {
         //render
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(gl_program_);
-        glBindVertexArray(gl_vao_);
 
         renderVideoFrame();
+
+        polyon_.render();
 
         glfwSwapBuffers(window);
         std::this_thread::sleep_for(std::chrono::milliseconds(2));

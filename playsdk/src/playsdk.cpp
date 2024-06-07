@@ -26,7 +26,9 @@ Playsdk::~Playsdk() {
 
 bool Playsdk::init(PlayMode playmode) {
     playmode_ = playmode;
-    render_->initial();
+    if (!render_->initial()) {
+        return false;
+    }
     return true;
 }
 

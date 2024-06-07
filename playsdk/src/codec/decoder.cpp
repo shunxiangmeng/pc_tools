@@ -62,7 +62,7 @@ bool Decoder::inputMediaFrame(MediaFrame frame) {
         int width = av_codec_context_->width;
         int height = av_codec_context_->height;
         
-        infof("video width:%d, height:%d\n", width, height);
+        //infof("video width:%d, height:%d\n", width, height);
 
         DecodedFrame decoded_frame(yuv_frame);
         video_decoded_frame_queue_.push(decoded_frame);

@@ -13,7 +13,10 @@ bool MediaClient::init() {
     //}
     //client_->startPreview(0, 0, IPrivClient::OnFrameProc(&MediaClient::onMediaFrame, this));
 
-    playsdk_->init(playsdk::PlayModeFile);
+    if (!playsdk_->init(playsdk::PlayModeFile)) {
+        errorf("playsdk init failed\n");
+        return false;
+    }
     playsdk_->setMediaFileName("E:\\bronco\\video.mp4");
     playsdk_->start();
 
