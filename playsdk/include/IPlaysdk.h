@@ -13,6 +13,11 @@
 
 namespace playsdk {
 
+typedef enum {
+    PlayModeLive = 0,
+    PlayModeFile
+}PlayMode;
+
 class IPlaysdk {
 public:
     IPlaysdk() = default;
@@ -21,9 +26,13 @@ public:
 
     static std::shared_ptr<IPlaysdk> create();
 
-    virtual bool init() = 0;
+    virtual bool init(PlayMode playmode) = 0;
 
     virtual bool inputMediaFrame(MediaFrame frame) = 0;
+
+    virtual bool setMediaFileName(const char* filename) = 0;
+
+    virtual bool start() = 0;
 };
 
 }

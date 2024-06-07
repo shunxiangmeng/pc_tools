@@ -12,14 +12,23 @@
 
 namespace playsdk {
 
-Decoder::Decoder() {
+Decoder::Decoder(DecodedFrameList& video_decoded_frame_queue) : video_decoded_frame_queue_(video_decoded_frame_queue) {
 }
 Decoder::~Decoder() {
 }
 
-bool Decoder::init() {
+bool Decoder::init(VideoCodecType codec) {
+
+    AVCodecID ff_codec;
+    switch (codec) {
+    case H264: ff_codec = AV_CODEC_ID_H264; break;
+    case H265: ff_codec = AV_CODEC_ID_H265; break;
+    default:
+        errorf("not support codec type %d\n", codec);
+        return false;
+    }
     av_codec_context_ = avcodec_alloc_context3(NULL);
-    av_codec_ = avcodec_find_decoder(AV_CODEC_ID_H264);
+    av_codec_ = avcodec_find_decoder(ff_codec);
     if (av_codec_ == nullptr) {
         return false;
     }
@@ -54,7 +63,11 @@ bool Decoder::inputMediaFrame(MediaFrame frame) {
         int height = av_codec_context_->height;
         
         infof("video width:%d, height:%d\n", width, height);
+
+        DecodedFrame decoded_frame(yuv_frame);
+        video_decoded_frame_queue_.push(decoded_frame);
     }
+    av_frame_free(&yuv_frame);
 
     return true;
 }

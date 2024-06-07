@@ -13,7 +13,7 @@
 
 namespace playsdk {
 
-Render::Render() {
+Render::Render(DecodedFrameList& video_decoded_frame_queue) : video_decoded_frame_queue_(video_decoded_frame_queue) {
     window_width_ = 800;
     window_height_ = 600;
 }
@@ -27,10 +27,10 @@ bool Render::initial() {
 
 static const GLfloat s_vertices_coord[] = {
     // positions        // textureCoords
-    0.5f,   0.5f, 0.0f,   1.0f, 1.0f,  // top right  
-    1.0f,  -1.0f, 0.0f,   1.0f, 0.0f,  // bottom right 
-    -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,  // bottom left
-    -1.0f,  1.0f, 0.0f,   0.0f, 1.0f   // top left
+    -1.0f,  1.0f, 0.0f,   0.0f, 0.0f,  // left top  
+     1.0f,  1.0f, 0.0f,   1.0f, 0.0f,  // right top 
+     1.0f, -1.0f, 0.0f,   1.0f, 1.0f,  // right bottom
+    -1.0f, -1.0f, 0.0f,   0.0f, 1.0f   // left bottom
 };
 
 static const unsigned int s_indices[] = {
@@ -65,7 +65,7 @@ bool Render::initShaders() {
     glDeleteShader(shader_fragment);
 
     GLuint position = (GLuint)glGetAttribLocation(gl_program_, "position");
-    GLuint coordnate = (GLuint)glGetAttribLocation(gl_program_, "coordnate");
+    GLuint coordinate = (GLuint)glGetAttribLocation(gl_program_, "coordniate");
     GLuint texturey = (GLuint)glGetUniformLocation(gl_program_, "tex_y");
     GLuint textureu = (GLuint)glGetUniformLocation(gl_program_, "tex_u");
     GLuint texturev = (GLuint)glGetUniformLocation(gl_program_, "tex_v");
@@ -79,13 +79,13 @@ bool Render::initShaders() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glEnableVertexAttribArray(position);
-    glEnableVertexAttribArray(coordnate);
+    glEnableVertexAttribArray(coordinate);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(s_vertices_coord), s_vertices_coord, GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s_indices), s_indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glVertexAttribPointer(coordnate, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(coordinate, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glUniform1i(texturey, 0);
     glUniform1i(textureu, 1);
@@ -175,55 +175,51 @@ GLFWwindow* Render::initWindowEnvironment() {
     return window;
 }
 
+void Render::renderVideoFrame() {
+    if (video_decoded_frame_queue_.size()) {
+        DecodedFrame frame = video_decoded_frame_queue_.front();
+        if (video_decoded_frame_queue_.size() > 1) {
+            video_decoded_frame_queue_.pop();
+        }
+
+        int32_t width = frame.frame_->width;
+        int32_t height = frame.frame_->height;
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gl_textureid_[0]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, frame.frame_->data[0]);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gl_textureid_[1]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width / 2, height / 2, 0, GL_RED, GL_UNSIGNED_BYTE, frame.frame_->data[1]);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, gl_textureid_[2]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width / 2, height / 2, 0, GL_RED, GL_UNSIGNED_BYTE, frame.frame_->data[2]);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+}
+
 void Render::run() {
     warnf("render thread start\n");
     GLFWwindow* window = initWindowEnvironment();
     initShaders();
-
-    typedef struct {
-        int32_t width;
-        int32_t height;
-        char* data;
-    }Frame;
-
-    Frame frame;
-    frame.width = 1920;
-    frame.height = 1080;
-    frame.data = (char*)malloc(frame.width * frame.height * 3 / 2);
-
-    int32_t width = frame.width;
-    int32_t height = frame.height;
-
     while (!glfwWindowShouldClose(window) && running()) {
-
         // input
         processInput(window);
+        glfwPollEvents();
 
         //render
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
         glUseProgram(gl_program_);
         glBindVertexArray(gl_vao_);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, gl_textureid_[0]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, frame.width, frame.height, 0, GL_RED, GL_UNSIGNED_BYTE, frame.data);
+        renderVideoFrame();
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, gl_textureid_[1]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width / 2, height / 2, 0, GL_RED, GL_UNSIGNED_BYTE, frame.data + (width * height));
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, gl_textureid_[2]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width / 2, height / 2, 0, GL_RED, GL_UNSIGNED_BYTE, frame.data + (width * height * 5 / 4));
-
-        //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            
-        glfwPollEvents();
         glfwSwapBuffers(window);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
     glfwTerminate();
     warnf("render thread exit\n");

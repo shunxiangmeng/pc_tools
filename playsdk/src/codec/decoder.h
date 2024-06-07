@@ -10,6 +10,7 @@
 #pragma once
 #include "infra/include/thread/Thread.h"
 #include "common/mediaframe/MediaFrame.h"
+#include "../DecodedFrame.h"
 
 extern "C" {
 #include "libavutil/avutil.h"
@@ -22,10 +23,10 @@ namespace playsdk {
 
 class Decoder {
 public:
-    Decoder();
+    Decoder(DecodedFrameList &video_decoded_frame_queue);
     ~Decoder();
 
-    bool init();
+    bool init(VideoCodecType codec);
 
     bool inputMediaFrame(MediaFrame frame);
 
@@ -36,6 +37,8 @@ private:
 private:
     AVCodecContext* av_codec_context_ = nullptr;
     AVCodec* av_codec_ = nullptr;
+
+    DecodedFrameList& video_decoded_frame_queue_;
 };
 
 }

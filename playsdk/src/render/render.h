@@ -11,12 +11,13 @@
 #include "glad/glad.h"
 #include "glfw/include/glfw3.h"
 #include "infra/include/thread/Thread.h"
+#include "../DecodedFrame.h"
 
 namespace playsdk {
 
 class Render : public infra::Thread {
 public:
-    Render();
+    Render(DecodedFrameList& video_decoded_frame_queue);
     ~Render();
 
     bool initial();
@@ -30,8 +31,10 @@ private:
     bool checkShader(GLint shader);
     bool CheckProgram(GLuint prog);
 
+    void renderVideoFrame();
 
 private:
+    DecodedFrameList& video_decoded_frame_queue_;
     int32_t window_width_;
     int32_t window_height_;
 
