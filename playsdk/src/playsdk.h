@@ -14,6 +14,7 @@
 #include "render/render.h"
 #include "DecodedFrame.h"
 #include "common/mediafiles/mp4/MP4Reader.h"
+#include "common/mediaframe/MediaFrameList.h"
 
 namespace playsdk {
 
@@ -37,6 +38,9 @@ private:
 
     std::shared_ptr<MP4Reader> mp4_reader_;
     std::string mp4_filename_;
+
+    MediaFrameList video_encoded_frame_queue_;
+    MediaFrameList audio_encoded_frame_queue_;
 
     DecodedFrameList video_decoded_frame_queue_;
     DecodedFrameList audio_decoded_frame_queue_;

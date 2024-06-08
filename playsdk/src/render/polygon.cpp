@@ -71,7 +71,6 @@ bool Polygon::initialize() {
 
 void Polygon::setPointLines(std::vector<std::vector<Position>>& polyons) {
     polyons_ = polyons;
-    // ×ø±êÏµ×ª»»
     for (auto& polygon : polyons_) {
         for (auto& position : polygon) {
             if (position.x > 1.0f) {
@@ -132,7 +131,6 @@ bool Polygon::render() {
         GL_CALL(glBindVertexArray(GL_NONE));
         GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, GL_NONE));
         GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE));
-        GL_CALL(glBindVertexArray(0));
     }
     return true;
 }

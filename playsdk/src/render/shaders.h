@@ -38,6 +38,7 @@ public:
     void setUniformMat3(const std::string& name, const glm::mat3& mat) const;
     void setUniformMat4(const std::string& name, const glm::mat4& mat) const;
     GLuint getAttribLocation(const std::string& name) const;
+    GLuint getUniformLocation(const std::string& name) const;
 private:
     bool checkCompileErrors(GLuint shader, std::string type);
 

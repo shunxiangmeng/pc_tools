@@ -10,12 +10,13 @@
 #include "render.h"
 #include "shaders.h"
 #include "infra/include/Logger.h"
+#include "infra/include/Timestamp.h"
 
 namespace playsdk {
 
 Render::Render(DecodedFrameList& video_decoded_frame_queue) : video_decoded_frame_queue_(video_decoded_frame_queue) {
-    window_width_ = 800;
-    window_height_ = 600;
+    window_width_ = 0;
+    window_height_ = 0;
 }
 
 Render::~Render() {
@@ -25,12 +26,60 @@ bool Render::initial() {
     init_promise_ = std::make_shared<std::promise<bool>>();
     std::future<bool> future = init_promise_->get_future();
     infra::Thread::start();
-    auto wait_result = future.wait_for(std::chrono::milliseconds(200));
+    auto wait_result = future.wait_for(std::chrono::milliseconds(500));
     if (wait_result == std::future_status::timeout) {
         errorf("init timeout\n");
         return false;
     }
     return future.get();
+}
+
+bool Render::initShader() {
+    if (shader_) {
+        return true;
+    }
+    shader_ = std::make_shared<Shader>();
+
+    const GLchar* vertex_shader_glsl = R"_(
+        #version 330 core
+        precision mediump float;
+        attribute vec3 position;
+        attribute vec2 coordniate;
+        uniform float center_sacle_x;
+        uniform float center_sacle_y;
+        varying vec2 textureOut;
+        void main(void)
+        {
+            gl_Position = vec4(position.x * center_sacle_x, position.y * center_sacle_y, position.z, 1.0);
+            textureOut = coordniate;
+        }
+    )_";
+
+    const GLchar* fragment_shader_glsl = R"_(
+        #version 330 core
+        varying vec2 textureOut;
+        uniform sampler2D tex_y;
+        uniform sampler2D tex_u;
+        uniform sampler2D tex_v;
+        void main(void)
+        {
+            vec3 yuv;
+            vec3 rgb;
+            yuv.r = texture2D(tex_y, textureOut).r;
+            yuv.g = texture2D(tex_u, textureOut).r - 0.5;
+            yuv.b = texture2D(tex_v, textureOut).r - 0.5;
+            rgb = mat3( 1.0,     1.0,       1.0,
+                        0.0,     -0.21482,  2.12798,
+                        1.28033, -0.38059,  0.0) * yuv;
+            gl_FragColor = vec4(rgb, 1);
+        }
+    )_";
+
+    if (!shader_->loadShader(vertex_shader_glsl, fragment_shader_glsl)) {
+        shader_.reset();
+        return false;
+    }
+    return true;
 }
 
 static const GLfloat s_vertices_coord[] = {
@@ -47,53 +96,32 @@ static const unsigned int s_indices[] = {
 };
 
 bool Render::initShaders() {
-    GLint vertex_compiled, fragment_compiled;
+    if (!initShader()) {
+        return false;
+    }
 
-    GLint shader_vertex = glCreateShader(GL_VERTEX_SHADER);
-    GLint shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
+    shader_->use();
+    GLuint position = shader_->getAttribLocation("position");
+    GLuint coordniate = shader_->getAttribLocation("coordniate");
+    GLuint texturey = shader_->getUniformLocation("tex_y");
+    GLuint textureu = shader_->getUniformLocation("tex_u");
+    GLuint texturev = shader_->getUniformLocation("tex_v");
 
-    glShaderSource(shader_vertex, 1, &g_vertex_shader, NULL);
-    glCompileShader(shader_vertex);
-    glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &vertex_compiled);
-    checkShader(shader_vertex);
+    glGenVertexArrays(1, &VAO_);
+    glGenBuffers(1, &VBO_);
+    glGenBuffers(1, &EBO_);
+    glBindVertexArray(VAO_);
 
-    glShaderSource(shader_fragment, 1, &g_fragment_shader, NULL);
-    glCompileShader(shader_fragment);
-    glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &fragment_compiled);
-    checkShader(shader_fragment);
-
-    gl_program_ = glCreateProgram();
-    glAttachShader(gl_program_, shader_vertex);
-    glAttachShader(gl_program_, shader_fragment);
-    glLinkProgram(gl_program_);
-    CheckProgram(gl_program_);
-    glUseProgram(gl_program_);
-
-    glDeleteShader(shader_vertex);
-    glDeleteShader(shader_fragment);
-
-    GLuint position = (GLuint)glGetAttribLocation(gl_program_, "position");
-    GLuint coordinate = (GLuint)glGetAttribLocation(gl_program_, "coordniate");
-    GLuint texturey = (GLuint)glGetUniformLocation(gl_program_, "tex_y");
-    GLuint textureu = (GLuint)glGetUniformLocation(gl_program_, "tex_u");
-    GLuint texturev = (GLuint)glGetUniformLocation(gl_program_, "tex_v");
-
-    glGenVertexArrays(1, &gl_vao_);
-    unsigned int VBO, EBO;
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glBindVertexArray(gl_vao_);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
     glEnableVertexAttribArray(position);
-    glEnableVertexAttribArray(coordinate);
+    glEnableVertexAttribArray(coordniate);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(s_vertices_coord), s_vertices_coord, GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s_indices), s_indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glVertexAttribPointer(coordinate, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(coordniate, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glUniform1i(texturey, 0);
     glUniform1i(textureu, 1);
@@ -123,33 +151,6 @@ bool Render::initShaders() {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindVertexArray(0);
-
-    return true;
-}
-
-bool Render::checkShader(GLint shader) {
-    GLint r = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &r);
-    if (r == GL_FALSE) {
-        GLchar msg[4096] = {};
-        GLsizei length;
-        glGetShaderInfoLog(shader, sizeof(msg), &length, msg);
-        errorf("Compile shader failed: %s", msg);
-        return false;
-    }
-    return true;
-}
-
-bool Render::CheckProgram(GLuint prog) {
-    GLint r = 0;
-    glGetProgramiv(prog, GL_LINK_STATUS, &r);
-    if (r == GL_FALSE) {
-        GLchar msg[4096] = {};
-        GLsizei length;
-        glGetProgramInfoLog(prog, sizeof(msg), &length, msg);
-        errorf("Link program failed: %s", msg);
-        return false;
-    }
     return true;
 }
 
@@ -168,7 +169,7 @@ GLFWwindow* Render::initWindowEnvironment() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(window_width_, window_height_, "playsdk", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "playsdk", NULL, NULL);
     if (window == nullptr) {
         errorf("Failed to create GLFW window\n");
         return nullptr;
@@ -183,18 +184,51 @@ GLFWwindow* Render::initWindowEnvironment() {
     return window;
 }
 
-void Render::renderVideoFrame() {
+void Render::setCenterScale(GLFWwindow* window, int32_t video_width, int32_t video_height) {
+    int32_t window_width = 0;
+    int32_t window_height = 0;
+    //glfwGetFramebufferSize(window, &window_width, &window_height);
+    glfwGetWindowSize(window, &window_width, &window_height);
+    if (window_width == window_width_ && window_height == window_height_) {
+        return;
+    }
+    window_width_ = window_width;
+    window_height_ = window_height;
+
+    float video_aspect_ratio = 1.0 * video_width / video_height;
+    float window_aspect_ration = 1.0 * window_width / window_height;
+    if (window_aspect_ration > video_aspect_ratio) {
+        // adjust x
+        float window_width_need = 1.0 * video_width / video_height * window_height;
+        center_scale_x_ = window_width_need / window_width;
+        center_scale_y_ = 1.0f;
+    } else {
+        // adjust y
+        float window_height_need = 1.0 * video_height / video_width * window_width;
+        center_scale_y_ = window_height_need / window_height;
+        center_scale_x_ = 1.0f;
+    }
+    shader_->setUniformFloat("center_sacle_y", center_scale_y_);
+    shader_->setUniformFloat("center_sacle_x", center_scale_x_);
+}
+
+void Render::renderVideoFrame(GLFWwindow* window) {
     if (video_decoded_frame_queue_.size()) {
         DecodedFrame frame = video_decoded_frame_queue_.front();
-        if (video_decoded_frame_queue_.size() > 1) {
-            video_decoded_frame_queue_.pop();
+        int64_t now = infra::getCurrentTimeMs();
+        //debugf("redner pts:%lld, now:%lld\n", frame.frame_->pkt_pts, now);
+        if (frame.frame_->pkt_pts <= now) {
+            if (video_decoded_frame_queue_.size() > 1) {
+                video_decoded_frame_queue_.pop();
+            }
         }
+
+        shader_->use();
+        glBindVertexArray(VAO_);
 
         int32_t width = frame.frame_->width;
         int32_t height = frame.frame_->height;
-
-        glUseProgram(gl_program_);
-        glBindVertexArray(gl_vao_);
+        setCenterScale(window, width, height);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, gl_textureid_[0]);
@@ -210,6 +244,7 @@ void Render::renderVideoFrame() {
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawElements(GL_LINE_LOOP, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
 }
 
@@ -255,7 +290,7 @@ void Render::run() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        renderVideoFrame();
+        renderVideoFrame(window);
 
         polyon_.render();
 

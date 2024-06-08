@@ -168,4 +168,8 @@ GLuint Shader::getAttribLocation(const std::string& name) const {
     return glGetAttribLocation(program_, name.c_str());
 }
 
+GLuint Shader::getUniformLocation(const std::string& name) const {
+    return glGetUniformLocation(program_, name.c_str());
+}
+
 }

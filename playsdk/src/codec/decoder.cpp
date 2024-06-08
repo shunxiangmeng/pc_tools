@@ -50,9 +50,15 @@ bool Decoder::init(VideoCodecType codec) {
 };
 
 bool Decoder::inputMediaFrame(MediaFrame frame) {
+    if (frame.empty() || video_decoded_frame_queue_.size() > 3) {
+        return false;
+    }
+
     AVPacket packet = { 0 };
     packet.data = (uint8_t*)frame.data();
     packet.size = frame.size();
+    packet.dts = frame.dts();
+    packet.pts = frame.pts();
     int ret = avcodec_send_packet(av_codec_context_, &packet);
     if (ret < 0) {
         errorf("decode failed ret:%d\n", ret);
@@ -62,17 +68,13 @@ bool Decoder::inputMediaFrame(MediaFrame frame) {
         int width = av_codec_context_->width;
         int height = av_codec_context_->height;
         
-        //infof("video width:%d, height:%d\n", width, height);
+        //infof("video width:%d, height:%d, pts:%lld\n", width, height, yuv_frame->pkt_pts);
 
         DecodedFrame decoded_frame(yuv_frame);
         video_decoded_frame_queue_.push(decoded_frame);
     }
     av_frame_free(&yuv_frame);
-
     return true;
 }
-
-
-
 
 }

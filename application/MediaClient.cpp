@@ -17,7 +17,7 @@ bool MediaClient::init() {
         errorf("playsdk init failed\n");
         return false;
     }
-    playsdk_->setMediaFileName("E:\\bronco\\video.mp4");
+    playsdk_->setMediaFileName("F:\\mp4\\HD1080P.X264.AAC.Mandarin.CHS.BDYS.mp4");
     playsdk_->start();
 
     return true;

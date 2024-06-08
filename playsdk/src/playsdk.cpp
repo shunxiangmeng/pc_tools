@@ -74,11 +74,16 @@ bool Playsdk::startPlayfile() {
             MediaFrame frame = mp4_reader_->getFrame();
             if (!frame.empty()) {
                 if (frame.getMediaFrameType() == Video) {
+                    //tracef("encoded frame pts:%lld\n", frame.pts());
                     frame.convertPlacementTypeToAnnexb();
-                    decoder_->inputMediaFrame(frame);
+                    video_encoded_frame_queue_.push_back(frame);
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            MediaFrame to_decoded_frame = video_encoded_frame_queue_.front();
+            if (decoder_->inputMediaFrame(to_decoded_frame)) {
+                video_encoded_frame_queue_.pop_front();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
         infof("exit playfile thread\n");
     }).detach();

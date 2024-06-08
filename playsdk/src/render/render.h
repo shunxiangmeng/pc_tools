@@ -28,22 +28,25 @@ private:
     virtual void run() override;
 
     GLFWwindow* initWindowEnvironment();
-
+    bool initShader();
     bool initShaders();
-    bool checkShader(GLint shader);
-    bool CheckProgram(GLuint prog);
 
-    void renderVideoFrame();
+    void renderVideoFrame(GLFWwindow* window);
+    void setCenterScale(GLFWwindow* window, int32_t video_w, int32_t video_h);
 
 private:
+    std::shared_ptr<Shader> shader_;
     std::shared_ptr<std::promise<bool>> init_promise_;
     DecodedFrameList& video_decoded_frame_queue_;
     int32_t window_width_;
     int32_t window_height_;
 
-    GLuint gl_program_{0};
-    GLuint gl_vao_{0};
+    GLuint VAO_ = 0;
+    GLuint VBO_ = 0;
+    GLuint EBO_ = 0;
     GLuint gl_textureid_[3];
+    float center_scale_x_ = 1.0f;
+    float center_scale_y_ = 1.0f;
 
     Polygon polyon_;
 };
