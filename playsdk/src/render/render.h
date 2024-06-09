@@ -14,6 +14,7 @@
 #include "infra/include/thread/Thread.h"
 #include "../DecodedFrame.h"
 #include "polygon.h"
+#include "text.h"
 
 namespace playsdk {
 
@@ -32,6 +33,7 @@ private:
     bool initShaders();
 
     void renderVideoFrame(GLFWwindow* window);
+    void readerTextInfo(GLFWwindow* window);
     void setCenterScale(GLFWwindow* window, int32_t video_w, int32_t video_h);
 
 private:
@@ -49,6 +51,7 @@ private:
     float center_scale_y_ = 1.0f;
 
     Polygon polyon_;
+    Text text_;
 };
 
 }

@@ -7,10 +7,14 @@
  * Description :  None
  * Note        : 
  ************************************************************************/
+#include <codecvt>
+#include <locale>
 #include "render.h"
-#include "shaders.h"
+#include "shader.h"
 #include "infra/include/Logger.h"
 #include "infra/include/Timestamp.h"
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace playsdk {
 
@@ -44,14 +48,14 @@ bool Render::initShader() {
         #version 330 core
         precision mediump float;
         attribute vec3 position;
-        attribute vec2 coordniate;
+        attribute vec2 coordinate;
         uniform float center_sacle_x;
         uniform float center_sacle_y;
         varying vec2 textureOut;
         void main(void)
         {
             gl_Position = vec4(position.x * center_sacle_x, position.y * center_sacle_y, position.z, 1.0);
-            textureOut = coordniate;
+            textureOut = coordinate;
         }
     )_";
 
@@ -102,7 +106,7 @@ bool Render::initShaders() {
 
     shader_->use();
     GLuint position = shader_->getAttribLocation("position");
-    GLuint coordniate = shader_->getAttribLocation("coordniate");
+    GLuint coordinate = shader_->getAttribLocation("coordinate");
     GLuint texturey = shader_->getUniformLocation("tex_y");
     GLuint textureu = shader_->getUniformLocation("tex_u");
     GLuint texturev = shader_->getUniformLocation("tex_v");
@@ -115,13 +119,15 @@ bool Render::initShaders() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
     glEnableVertexAttribArray(position);
-    glEnableVertexAttribArray(coordniate);
+    glEnableVertexAttribArray(coordinate);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(s_vertices_coord), s_vertices_coord, GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(s_indices), s_indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glVertexAttribPointer(coordniate, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(coordinate, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    glBindVertexArray(0);
 
     glUniform1i(texturey, 0);
     glUniform1i(textureu, 1);
@@ -149,8 +155,6 @@ bool Render::initShaders() {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    glBindVertexArray(0);
     return true;
 }
 
@@ -217,7 +221,7 @@ void Render::renderVideoFrame(GLFWwindow* window) {
         DecodedFrame frame = video_decoded_frame_queue_.front();
         int64_t now = infra::getCurrentTimeMs();
         //debugf("redner pts:%lld, now:%lld\n", frame.frame_->pkt_pts, now);
-        if (frame.frame_->pkt_pts <= now) {
+        if (frame.frame_->pts <= now) {
             if (video_decoded_frame_queue_.size() > 1) {
                 video_decoded_frame_queue_.pop();
             }
@@ -248,6 +252,21 @@ void Render::renderVideoFrame(GLFWwindow* window) {
     }
 }
 
+void Render::readerTextInfo(GLFWwindow* window) {
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(-1.0f, 0.85f, 0.0f));
+    model = glm::rotate(model, glm::radians(-30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    float scale = 0.8f;
+    model = glm::scale(model, glm::vec3(scale, scale, 0.0f));
+
+    glm::mat4 projection = glm::ortho(0.0f, window_width_*1.0f, 0.0f, window_height_*1.0f);
+
+    std::string now = infra::getCurrentTime();
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    std::wstring text = converter.from_bytes(now);
+    text_.render(model, text.data(), text.length(), glm::vec3(1.0, 1.0, 1.0));
+}
+
 void Render::run() {
     warnf("render thread start\n");
     bool init_reesult = false;
@@ -265,6 +284,10 @@ void Render::run() {
             glfwTerminate();
             break;
         }
+        if (!text_.initialize()) {
+            glfwTerminate();
+            break;
+        }
         init_reesult = true;
     } while (0);
     
@@ -272,7 +295,7 @@ void Render::run() {
 
     std::vector<std::vector<Position>> polyons;
     std::vector<Position> polyon;
-    polyon.push_back({ 0.1f, 0.0f, 0.0f});
+    polyon.push_back({ 0.1f, 0.0f, 0.0f });
     polyon.push_back({ 1.0f, 0.0f, 0.0f });
     polyon.push_back({ 0.9f, 0.9f, 0.0f });
     polyon.push_back({ 0.0f, 1.0f, 0.0f });
@@ -293,6 +316,10 @@ void Render::run() {
         renderVideoFrame(window);
 
         polyon_.render();
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        readerTextInfo(window);
 
         glfwSwapBuffers(window);
         std::this_thread::sleep_for(std::chrono::milliseconds(2));

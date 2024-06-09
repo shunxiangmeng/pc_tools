@@ -31,6 +31,7 @@ include_directories(${PROJECT_SOURCE_DIR}/common)
 include_directories(${PROJECT_SOURCE_DIR}/common/infra)
 include_directories(${PROJECT_SOURCE_DIR}/common/thirdparty)
 include_directories(${PROJECT_SOURCE_DIR}/common/thirdparty/msgpack)
+include_directories(${PROJECT_SOURCE_DIR}/common/thirdparty/freetype-2.13.0/include)
 include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles)
 include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles/common/libmov/include)
 include_directories(${PROJECT_SOURCE_DIR}/common/middleware)
@@ -48,6 +49,10 @@ add_subdirectory(common/common)
 add_subdirectory(common/thirdparty)
 add_subdirectory(common/middleware)
 add_subdirectory(playsdk)
+
+# for freetype
+add_compile_definitions(DARWIN_NO_CARBON)
+add_compile_definitions(FT2_BUILD_LIBRARY)
 
 file(GLOB_RECURSE APPLICATION_SOURCE_FILES application/*.cpp mediasource/*.cpp)
 file(GLOB_RECURSE APPLICATION_SOURCE_HEADER_FILES application/*.h mediasource/*.h)
