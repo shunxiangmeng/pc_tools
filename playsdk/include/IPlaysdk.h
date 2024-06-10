@@ -33,6 +33,10 @@ public:
     virtual bool setMediaFileName(const char* filename) = 0;
 
     virtual bool start() = 0;
+
+    virtual bool setSpeed(float speed) = 0;
+    
+    virtual float speed()  = 0;
 };
 
 }

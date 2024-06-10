@@ -19,7 +19,7 @@ bool MediaClient::init() {
     }
     playsdk_->setMediaFileName("F:\\mp4\\HD1080P.X264.AAC.Mandarin.CHS.BDYS.mp4");
     playsdk_->start();
-
+    playsdk_->setSpeed(2.9f);
     return true;
 }
 

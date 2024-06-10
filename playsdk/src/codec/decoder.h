@@ -29,12 +29,10 @@ class Decoder {
 public:
     Decoder(DecodedFrameList &decoded_frame_queue);
     ~Decoder();
-
     bool init(VideoFrameInfo videoinfo);
     bool init(AudioFrameInfo audioinfo);
 
     bool inputMediaFrame(MediaFrame frame);
-
 
 private:
     

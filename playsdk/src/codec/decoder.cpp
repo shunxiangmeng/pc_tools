@@ -89,7 +89,7 @@ bool Decoder::init(AudioFrameInfo audioinfo) {
 }
 
 bool Decoder::inputMediaFrame(MediaFrame frame) {
-    if (frame.empty() || decoded_frame_queue_.size() > 3) {
+    if (frame.empty() || decoded_frame_queue_.size() > 5) {
         return false;
     }
 
@@ -154,12 +154,14 @@ bool Decoder::inputMediaFrame(MediaFrame frame) {
             DecodedFrame aframe(convertframe);
             decoded_frame_queue_.push(aframe);
             av_frame_free(&convertframe);
+            //infof("audio decoded_frame_size:%d\n", decoded_frame_queue_.size());
         } else {
             int width = av_codec_context_->width;
             int height = av_codec_context_->height;
             //infof("video width:%d, height:%d, pts:%lld\n", width, height, decoded_frame->pkt_pts);
             DecodedFrame vframe(decoded_frame);
             decoded_frame_queue_.push(vframe);
+            //infof("video decoded_frame_size:%d\n", decoded_frame_queue_.size());
         }
     }
     av_frame_free(&decoded_frame);

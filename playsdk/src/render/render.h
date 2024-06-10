@@ -24,7 +24,11 @@ public:
     ~Render();
 
     bool initial();
-
+    void setSpeed(float speed);
+    int64_t getCurrentPts() {
+        return current_pts_;
+    }
+    void setAudioCurrentPts(int64_t pts);
 private:
     virtual void run() override;
 
@@ -52,6 +56,10 @@ private:
 
     Polygon polyon_;
     Text text_;
+
+    int64_t current_pts_;
+    int64_t audio_current_pts_;
+    float speed_ = 1.0f;
 };
 
 }

@@ -9,6 +9,7 @@
  ************************************************************************/
 #include "playsdk.h"
 #include "infra/include/Logger.h"
+#include "infra/include/Timestamp.h"
 
 namespace playsdk {
 
@@ -20,7 +21,7 @@ Playsdk::Playsdk() : playmode_(PlayModeLive) {
     video_decoder_ = std::make_shared<Decoder>(video_decoded_frame_queue_);
     audio_decoder_ = std::make_shared<Decoder>(audio_decoded_frame_queue_);
     render_ = std::make_shared<Render>(video_decoded_frame_queue_);
-    audio_ = std::make_shared<Audio>(audio_decoded_frame_queue_);
+    audio_ = std::make_shared<Audio>(render_, audio_decoded_frame_queue_);
 }
 
 Playsdk::~Playsdk() {
@@ -62,7 +63,16 @@ bool Playsdk::start() {
     return true;
 }
 
-
+bool Playsdk::setSpeed(float speed) {
+    speed_ = speed;
+    render_->setSpeed(speed);
+    audio_->setSpeed(speed);
+    return true;
+}
+ 
+float Playsdk::speed() {
+    return speed_;
+}
 
 bool Playsdk::startPlayfile() {
     infof("start playfile %s\n", mp4_filename_.data());
@@ -79,9 +89,19 @@ bool Playsdk::startPlayfile() {
 
     std::thread([this]() {
         infof("start playfile thread\n");
+        int64_t pts_offset = infra::getCurrentTimeMs();
         while (true) {
             MediaFrame frame = mp4_reader_->getFrame();
             if (!frame.empty()) {
+
+                if (speed() > 3.0f && frame.getMediaFrameType() == MediaFrameType::Audio) {
+                    continue;
+                }
+
+                int64_t diff = frame.pts() - pts_offset;
+                int64_t adjust_speed_pts = int64_t(diff * 1.0 / speed());
+                frame.setPts(pts_offset + adjust_speed_pts);
+
                 if (frame.getMediaFrameType() == MediaFrameType::Video) {
                     //tracef("encoded frame pts:%lld\n", frame.pts());
                     frame.convertPlacementTypeToAnnexb();
@@ -93,11 +113,13 @@ bool Playsdk::startPlayfile() {
             }
             MediaFrame to_decoded_frame = video_encoded_frame_queue_.front();
             if (video_decoder_->inputMediaFrame(to_decoded_frame)) {
+                //infof("video_encoded_frame_queue.size:%d\n", video_encoded_frame_queue_.size());
                 video_encoded_frame_queue_.pop_front();
             }
 
             MediaFrame to_decoded_audio_frame = audio_encoded_frame_queue_.front();
             if (audio_decoder_->inputMediaFrame(to_decoded_audio_frame)) {
+                //infof("audio_encoded_frame_queue.size:%d\n", audio_encoded_frame_queue_.size());
                 audio_encoded_frame_queue_.pop_front();
             }
 

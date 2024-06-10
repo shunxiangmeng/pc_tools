@@ -28,6 +28,8 @@ public:
     virtual bool inputMediaFrame(MediaFrame frame) override;
     virtual bool setMediaFileName(const char* filename) override;
     virtual bool start() override;
+    virtual bool setSpeed(float speed) override;
+    virtual float speed() override;
 
 private:
     bool startPlayfile();
@@ -47,6 +49,8 @@ private:
 
     DecodedFrameList video_decoded_frame_queue_;
     DecodedFrameList audio_decoded_frame_queue_;
+
+    float speed_ = 1.0f;
 };
     
 }

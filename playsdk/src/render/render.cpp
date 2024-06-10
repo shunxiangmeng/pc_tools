@@ -226,6 +226,7 @@ void Render::renderVideoFrame(GLFWwindow* window) {
                 video_decoded_frame_queue_.pop();
             }
         }
+        current_pts_ = frame.frame_->pts;
 
         shader_->use();
         glBindVertexArray(VAO_);
@@ -252,6 +253,14 @@ void Render::renderVideoFrame(GLFWwindow* window) {
     }
 }
 
+void Render::setSpeed(float speed) {
+    speed_ = speed;
+}
+
+void Render::setAudioCurrentPts(int64_t pts) {
+    audio_current_pts_ = pts;
+}
+
 void Render::readerTextInfo(GLFWwindow* window) {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(-1.0f, 0.85f, 0.0f));
@@ -265,6 +274,14 @@ void Render::readerTextInfo(GLFWwindow* window) {
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     std::wstring text = converter.from_bytes(now);
     text_.render(model, text.data(), text.length(), glm::vec3(1.0, 1.0, 1.0));
+
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(-0.2f, 0.85f, 0.0f));
+    model = glm::scale(model, glm::vec3(scale, scale, 0.0f));
+
+    wchar_t video_pts[512] = {0};
+    swprintf(video_pts, L"pts:%lld %lld", current_pts_ / 100, audio_current_pts_ / 100);
+    text_.render(model, video_pts, wcslen(video_pts), glm::vec3(1.0, 1.0, 1.0));
 }
 
 void Render::run() {
@@ -322,7 +339,7 @@ void Render::run() {
         readerTextInfo(window);
 
         glfwSwapBuffers(window);
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     glfwTerminate();
     warnf("render thread exit\n");
