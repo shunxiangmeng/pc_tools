@@ -12,6 +12,7 @@
 #include "playsdk/include/IPlaysdk.h"
 #include "codec/decoder.h"
 #include "render/render.h"
+#include "audio/audio.h"
 #include "DecodedFrame.h"
 #include "common/mediafiles/mp4/MP4Reader.h"
 #include "common/mediaframe/MediaFrameList.h"
@@ -33,9 +34,11 @@ private:
 
 private:
     PlayMode playmode_;
-    std::shared_ptr<Decoder> decoder_;
+    std::shared_ptr<Decoder> video_decoder_;
+    std::shared_ptr<Decoder> audio_decoder_;
     std::shared_ptr<Render> render_;
-
+    std::shared_ptr<Audio> audio_;
+    
     std::shared_ptr<MP4Reader> mp4_reader_;
     std::string mp4_filename_;
 
@@ -44,7 +47,6 @@ private:
 
     DecodedFrameList video_decoded_frame_queue_;
     DecodedFrameList audio_decoded_frame_queue_;
-
 };
     
 }

@@ -36,9 +36,6 @@ include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles)
 include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles/common/libmov/include)
 include_directories(${PROJECT_SOURCE_DIR}/common/middleware)
 include_directories(${PROJECT_SOURCE_DIR}/applicaton)
-include_directories(${PROJECT_SOURCE_DIR}/playsdk/thirdparty/ffmpeg/include)
-include_directories(${PROJECT_SOURCE_DIR}/playsdk/thirdparty/glad/include)
-include_directories(${PROJECT_SOURCE_DIR}/playsdk/thirdparty)
 
 #源文件
 set(APP_SOURCE_FILES)

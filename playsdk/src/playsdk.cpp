@@ -17,8 +17,10 @@ std::shared_ptr<IPlaysdk> IPlaysdk::create() {
 }
 
 Playsdk::Playsdk() : playmode_(PlayModeLive) {
-    decoder_ = std::make_shared<Decoder>(video_decoded_frame_queue_);
+    video_decoder_ = std::make_shared<Decoder>(video_decoded_frame_queue_);
+    audio_decoder_ = std::make_shared<Decoder>(audio_decoded_frame_queue_);
     render_ = std::make_shared<Render>(video_decoded_frame_queue_);
+    audio_ = std::make_shared<Audio>(audio_decoded_frame_queue_);
 }
 
 Playsdk::~Playsdk() {
@@ -26,6 +28,9 @@ Playsdk::~Playsdk() {
 
 bool Playsdk::init(PlayMode playmode) {
     playmode_ = playmode;
+    if (!audio_->initialize()) {
+        return false;
+    }
     if (!render_->initial()) {
         return false;
     }
@@ -62,9 +67,13 @@ bool Playsdk::start() {
 bool Playsdk::startPlayfile() {
     infof("start playfile %s\n", mp4_filename_.data());
     VideoFrameInfo videoinfo;
+    AudioFrameInfo audioinfo;
     mp4_reader_->getVideoInfo(videoinfo);
-
-    if (!decoder_->init(videoinfo.codec)) {
+    mp4_reader_->getAudioInfo(audioinfo);
+    if (!video_decoder_->init(videoinfo)) {
+        return false;
+    }
+    if (!audio_decoder_->init(audioinfo)) {
         return false;
     }
 
@@ -73,16 +82,25 @@ bool Playsdk::startPlayfile() {
         while (true) {
             MediaFrame frame = mp4_reader_->getFrame();
             if (!frame.empty()) {
-                if (frame.getMediaFrameType() == Video) {
+                if (frame.getMediaFrameType() == MediaFrameType::Video) {
                     //tracef("encoded frame pts:%lld\n", frame.pts());
                     frame.convertPlacementTypeToAnnexb();
                     video_encoded_frame_queue_.push_back(frame);
                 }
+                if (frame.getMediaFrameType() == MediaFrameType::Audio) {
+                    audio_encoded_frame_queue_.push_back(frame);
+                }
             }
             MediaFrame to_decoded_frame = video_encoded_frame_queue_.front();
-            if (decoder_->inputMediaFrame(to_decoded_frame)) {
+            if (video_decoder_->inputMediaFrame(to_decoded_frame)) {
                 video_encoded_frame_queue_.pop_front();
             }
+
+            MediaFrame to_decoded_audio_frame = audio_encoded_frame_queue_.front();
+            if (audio_decoder_->inputMediaFrame(to_decoded_audio_frame)) {
+                audio_encoded_frame_queue_.pop_front();
+            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
         infof("exit playfile thread\n");

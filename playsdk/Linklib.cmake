@@ -9,4 +9,8 @@ set(PLAYSDK_DEPEND_LIBS ${PLAYSDK_DEPEND_LIBS} glfw3_mt.lib)
 
 set(PLAYSDK_DEPEND_LIBS ${PLAYSDK_DEPEND_LIBS} opengl32.lib)
 
+link_directories(${PROJECT_SOURCE_DIR}/playsdk/thirdparty/OpenAL/libs/Win32)
+link_directories(${PROJECT_SOURCE_DIR}/playsdk/thirdparty/OpenAL/libs/Win32/EFX-Util_MT)
+set(PLAYSDK_DEPEND_LIBS ${PLAYSDK_DEPEND_LIBS} OpenAL32.lib EFX-Util.lib)
+
 set(APP_DEPEND_LIBS ${PLAYSDK_DEPEND_LIBS})

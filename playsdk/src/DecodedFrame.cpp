@@ -58,11 +58,17 @@ void DecodedFrameList::push(DecodedFrame frame) {
     decoded_frame_queue_.push(frame);
 }
 void DecodedFrameList::pop() {
+    if (decoded_frame_queue_.size() == 0) {
+        return;
+    }
     std::lock_guard<std::recursive_mutex> guard(mutex_);
     decoded_frame_queue_.pop();
 }
 
 DecodedFrame DecodedFrameList::front() {
+    if (decoded_frame_queue_.size() == 0) {
+        return DecodedFrame();
+    }
     std::lock_guard<std::recursive_mutex> guard(mutex_);
     DecodedFrame frame = decoded_frame_queue_.front();
     return frame;

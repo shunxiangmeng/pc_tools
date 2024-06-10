@@ -17,16 +17,21 @@ extern "C" {
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
+#include "libswresample/swresample.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+#include "libavutil/opt.h"
 }
 
 namespace playsdk {
 
 class Decoder {
 public:
-    Decoder(DecodedFrameList &video_decoded_frame_queue);
+    Decoder(DecodedFrameList &decoded_frame_queue);
     ~Decoder();
 
-    bool init(VideoCodecType codec);
+    bool init(VideoFrameInfo videoinfo);
+    bool init(AudioFrameInfo audioinfo);
 
     bool inputMediaFrame(MediaFrame frame);
 
@@ -35,10 +40,13 @@ private:
     
 
 private:
+    MediaFrameType video_audio_;
     AVCodecContext* av_codec_context_ = nullptr;
     AVCodec* av_codec_ = nullptr;
+    SwrContext* swr_context_ = nullptr;
+    AVFrame *convertframe_ = nullptr;
 
-    DecodedFrameList& video_decoded_frame_queue_;
+    DecodedFrameList& decoded_frame_queue_;
 };
 
 }
