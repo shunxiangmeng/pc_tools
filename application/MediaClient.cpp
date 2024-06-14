@@ -7,23 +7,31 @@ MediaClient::MediaClient() {
 }
 
 bool MediaClient::init() {
-    //bool ret = client_->connect("127.0.0.1", 7000);
-    //if (!ret) {
-    //    return false;
-    //}
-    //client_->startPreview(0, 0, IPrivClient::OnFrameProc(&MediaClient::onMediaFrame, this));
+    bool ret = client_->connect("172.16.9.100", 7000);
+    if (!ret) {
+        return false;
+    }
+    client_->startPreview(0, 0, IPrivClient::OnFrameProc(&MediaClient::onMediaFrame, this));
 
-    if (!playsdk_->init(playsdk::PlayModeFile)) {
+    if (!playsdk_->init(playsdk::PlayModeLive)) {
+        errorf("playsdk init failed\n");
+        return false;
+    }
+    playsdk_->start();
+
+    /*if (!playsdk_->init(playsdk::PlayModeFile)) {
         errorf("playsdk init failed\n");
         return false;
     }
     playsdk_->setMediaFileName("F:\\mp4\\HD1080P.X264.AAC.Mandarin.CHS.BDYS.mp4");
     playsdk_->start();
     playsdk_->setSpeed(2.9f);
+    */
     return true;
 }
 
 void MediaClient::onMediaFrame(MediaFrameType type, MediaFrame& frame) {
-    tracef("onmedia\n");
+    //tracef("onmedia size:%d\n", frame.size());
+    playsdk_->inputMediaFrame(frame);
 }
 
