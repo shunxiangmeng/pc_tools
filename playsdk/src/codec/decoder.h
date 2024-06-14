@@ -33,11 +33,13 @@ public:
     bool init(AudioFrameInfo audioinfo);
 
     bool inputMediaFrame(MediaFrame frame);
+    bool running() const;
 
 private:
     
 
 private:
+    bool initailed_;
     MediaFrameType video_audio_;
     AVCodecContext* av_codec_context_ = nullptr;
     AVCodec* av_codec_ = nullptr;

@@ -35,12 +35,22 @@ bool Playsdk::init(PlayMode playmode) {
     if (!render_->initial()) {
         return false;
     }
+    if (playmode_ == PlayModeLive) {
+        startPlayStream();
+    }
     return true;
 }
 
 bool Playsdk::inputMediaFrame(MediaFrame frame) {
     if (playmode_ == PlayModeFile) {
         return false;
+    }
+    if (frame.getMediaFrameType() == MediaFrameType::Video) {
+        frame.convertPlacementTypeToAnnexb();
+        video_encoded_frame_queue_.push_back(frame);
+    }
+    if (frame.getMediaFrameType() == MediaFrameType::Audio) {
+        audio_encoded_frame_queue_.push_back(frame);
     }
     return true;
 }
@@ -126,6 +136,54 @@ bool Playsdk::startPlayfile() {
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
         infof("exit playfile thread\n");
+    }).detach();
+    return true;
+}
+
+bool Playsdk::startPlayStream() {
+    running_ = true;
+    std::thread([this]() {
+        infof("start playstream thread\n");
+        while (running_) {
+            if (audio_encoded_frame_queue_.size()) {
+                MediaFrame to_decoded_audio_frame = audio_encoded_frame_queue_.front();
+                if (!audio_decoder_->running()) {
+                    AudioFrameInfo audioinfo;
+                    to_decoded_audio_frame.getAudioFrameInfo(audioinfo);
+                    if (!audio_decoder_->init(audioinfo)) {
+                        warnf("audio decoder init error\n");
+                    }
+                }
+                if (audio_decoder_->inputMediaFrame(to_decoded_audio_frame)) {
+                    //infof("audio_encoded_frame_queue.size:%d\n", audio_encoded_frame_queue_.size());
+                    audio_encoded_frame_queue_.pop_front();
+                }
+            }
+
+            if (video_encoded_frame_queue_.size()) {
+                MediaFrame to_decoded_video_frame = video_encoded_frame_queue_.front();
+                if (!video_decoder_->running()) {
+                    VideoFrameInfo videoinfo;
+                    to_decoded_video_frame.getVideoFrameInfo(videoinfo);
+                    if (videoinfo.type != VideoFrame_I) {
+                        tracef("skip first I frame before p frame\n");
+                        video_encoded_frame_queue_.pop_front();
+                        continue;
+                    }
+                    if (!video_decoder_->init(videoinfo)) {
+                        warnf("video decoder init error\n");
+                    }
+
+                }
+                if (video_decoder_->inputMediaFrame(to_decoded_video_frame)) {
+                    //infof("video_encoded_frame_queue.size:%d\n", audio_encoded_frame_queue_.size());
+                    video_encoded_frame_queue_.pop_front();
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        }
+        infof("exit playstream thread\n");
     }).detach();
     return true;
 }

@@ -33,9 +33,11 @@ public:
 
 private:
     bool startPlayfile();
+    bool startPlayStream();
 
 private:
     PlayMode playmode_;
+    bool running_;
     std::shared_ptr<Decoder> video_decoder_;
     std::shared_ptr<Decoder> audio_decoder_;
     std::shared_ptr<Render> render_;

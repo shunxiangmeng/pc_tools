@@ -13,7 +13,7 @@
 
 namespace playsdk {
 
-Decoder::Decoder(DecodedFrameList& decoded_frame_queue) : decoded_frame_queue_(decoded_frame_queue) {
+Decoder::Decoder(DecodedFrameList& decoded_frame_queue) : initailed_(false), video_audio_(InvalidFrameType), decoded_frame_queue_(decoded_frame_queue) {
 }
 Decoder::~Decoder() {
 }
@@ -48,6 +48,7 @@ bool Decoder::init(VideoFrameInfo videoinfo) {
         errorf("open decoder error\n");
         return false;
     }
+    initailed_ = true;
     infof("init decoder succeed\n");
     return true;
 }
@@ -84,12 +85,17 @@ bool Decoder::init(AudioFrameInfo audioinfo) {
         errorf("open decoder error\n");
         return false;
     }
+    initailed_ = true;
     infof("init decoder succeed\n");
     return true;
 }
 
+bool Decoder::running() const {
+    return initailed_;
+}
+
 bool Decoder::inputMediaFrame(MediaFrame frame) {
-    if (frame.empty() || decoded_frame_queue_.size() > 5) {
+    if (!initailed_ || frame.empty() || decoded_frame_queue_.size() > 5) {
         return false;
     }
 
