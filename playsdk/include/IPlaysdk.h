@@ -10,6 +10,7 @@
 #pragma once
 #include <memory>
 #include "common/mediaframe/MediaFrame.h"
+#include "jsoncpp/include/json.h"
 
 namespace playsdk {
 
@@ -37,6 +38,8 @@ public:
     virtual bool setSpeed(float speed) = 0;
     
     virtual float speed()  = 0;
+
+    virtual bool setTrackingBox(Json::Value &data) = 0;
 };
 
 }

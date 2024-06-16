@@ -30,6 +30,7 @@ public:
     virtual bool start() override;
     virtual bool setSpeed(float speed) override;
     virtual float speed() override;
+    virtual bool setTrackingBox(Json::Value &data) override;
 
 private:
     bool startPlayfile();

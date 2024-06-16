@@ -178,7 +178,7 @@ void Audio::run() {
                 if (state != AL_PLAYING) {
                     alGetSourcei(al_source_id_, AL_BUFFERS_QUEUED, &al_queued_buffers_);
                     if (al_queued_buffers_) {
-                        warnf("source play......\n");
+                        //warnf("source play......\n");
                         alSourcePlay(al_source_id_);
                     }
                 }

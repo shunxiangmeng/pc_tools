@@ -84,6 +84,10 @@ float Playsdk::speed() {
     return speed_;
 }
 
+bool Playsdk::setTrackingBox(Json::Value& data) {
+    return render_->setTrackingBox(data);
+}
+
 bool Playsdk::startPlayfile() {
     infof("start playfile %s\n", mp4_filename_.data());
     VideoFrameInfo videoinfo;

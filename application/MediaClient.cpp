@@ -3,11 +3,12 @@
 
 MediaClient::MediaClient() {
     client_ = IPrivClient::create();
+    event_client_ = IPrivClient::create();
     playsdk_ = playsdk::IPlaysdk::create();
 }
 
 bool MediaClient::init() {
-    bool ret = client_->connect("172.16.9.100", 7000);
+    bool ret = client_->connect("192.168.2.160", 7000);
     if (!ret) {
         return false;
     }
@@ -35,3 +36,15 @@ void MediaClient::onMediaFrame(MediaFrameType type, MediaFrame& frame) {
     playsdk_->inputMediaFrame(frame);
 }
 
+bool MediaClient::subscribeEvent() {
+    if (!event_client_->connect("192.168.2.160", 7000)) {
+        return false;
+    }
+
+    event_client_->subscribeEvent("detect_target", [this](Json::Value& data) {
+        //tracef("onEvent:%s\n", data.toStyledString().data());
+        playsdk_->setTrackingBox(data);
+    });
+
+    return true;
+}

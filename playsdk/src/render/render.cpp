@@ -261,6 +261,25 @@ void Render::setAudioCurrentPts(int64_t pts) {
     audio_current_pts_ = pts;
 }
 
+bool Render::setTrackingBox(Json::Value data) {
+    //tracef("%s\n", data.toStyledString().data());
+    auto box = std::make_shared<CurrentDetectResult>();
+    box->timestamp = data["timestamp"].asUInt();
+    for (int i = 0; i < data["targets"].size(); i++) {
+        Target target;
+        target.type = (TargetType)data["targets"][i]["type"].asInt();
+        target.id = data["targets"][i]["id"].asUInt();
+        target.rect.x = data["targets"][i]["x"].asFloat();
+        target.rect.y = data["targets"][i]["y"].asFloat();
+        target.rect.w = data["targets"][i]["w"].asFloat();
+        target.rect.h = data["targets"][i]["h"].asFloat();
+        box->targets.push_back(std::move(target));
+    }
+    std::lock_guard<std::mutex> guard(tracking_box_list_mutex_);
+    tracking_box_list_.push(box);
+    return true;
+}
+
 void Render::readerTextInfo(GLFWwindow* window) {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(-1.0f, 0.85f, 0.0f));
@@ -282,6 +301,37 @@ void Render::readerTextInfo(GLFWwindow* window) {
     wchar_t video_pts[512] = {0};
     swprintf(video_pts, L"pts:%lld %lld", current_pts_ / 100, audio_current_pts_ / 100);
     text_.render(model, video_pts, wcslen(video_pts), glm::vec3(1.0, 1.0, 1.0));
+}
+
+void Render::renderTrackingBox(GLFWwindow* window) {
+    static int64_t last_video_pts = 0;
+    if (last_video_pts == current_pts_) {
+        return;
+    }
+    last_video_pts = current_pts_;
+
+    std::shared_ptr<CurrentDetectResult> result;
+    {
+        std::lock_guard<std::mutex> guard(tracking_box_list_mutex_);
+        if (tracking_box_list_.size()) {
+            result = tracking_box_list_.front();
+            tracking_box_list_.pop();
+        }
+    }
+
+    std::vector<std::vector<Position>> polyons;
+    if (result) {
+        for (auto &t : result->targets) {
+            std::vector<Position> polyon;
+            polyon.push_back({ t.rect.x, t.rect.y, 0.0f });
+            polyon.push_back({ t.rect.x + t.rect.w, t.rect.y, 0.0f });
+            polyon.push_back({ t.rect.x + t.rect.w, t.rect.y + t.rect.h, 0.0f });
+            polyon.push_back({ t.rect.x, t.rect.y + t.rect.h, 0.0f });
+            polyons.push_back(polyon);
+        } 
+    }
+    //tracef("polyons size:%d\n", polyons.size());
+    polyon_.setPointLines(polyons);
 }
 
 void Render::run() {
@@ -310,17 +360,6 @@ void Render::run() {
     
     init_promise_->set_value(std::move(init_reesult));
 
-    std::vector<std::vector<Position>> polyons;
-    std::vector<Position> polyon;
-    polyon.push_back({ 0.1f, 0.0f, 0.0f });
-    polyon.push_back({ 1.0f, 0.0f, 0.0f });
-    polyon.push_back({ 0.9f, 0.9f, 0.0f });
-    polyon.push_back({ 0.0f, 1.0f, 0.0f });
-
-    polyons.push_back(polyon);
-
-    polyon_.setPointLines(polyons);
-
     while (!glfwWindowShouldClose(window) && running()) {
         // input
         processInput(window);
@@ -332,6 +371,7 @@ void Render::run() {
 
         renderVideoFrame(window);
 
+        renderTrackingBox(window);
         polyon_.render();
 
         glEnable(GL_BLEND);

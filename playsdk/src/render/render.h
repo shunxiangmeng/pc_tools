@@ -9,12 +9,15 @@
  ************************************************************************/
 #pragma once
 #include <future>
+#include <queue>
 #include "glad/glad.h"
 #include "glfw/include/glfw3.h"
 #include "infra/include/thread/Thread.h"
+#include "jsoncpp/include/json.h"
 #include "../DecodedFrame.h"
 #include "polygon.h"
 #include "text.h"
+#include "hal/Defines.h"
 
 namespace playsdk {
 
@@ -29,6 +32,7 @@ public:
         return current_pts_;
     }
     void setAudioCurrentPts(int64_t pts);
+    bool setTrackingBox(Json::Value data);
 private:
     virtual void run() override;
 
@@ -38,6 +42,7 @@ private:
 
     void renderVideoFrame(GLFWwindow* window);
     void readerTextInfo(GLFWwindow* window);
+    void renderTrackingBox(GLFWwindow* window);
     void setCenterScale(GLFWwindow* window, int32_t video_w, int32_t video_h);
 
 private:
@@ -60,6 +65,9 @@ private:
     int64_t current_pts_;
     int64_t audio_current_pts_;
     float speed_ = 1.0f;
+
+    std::mutex tracking_box_list_mutex_;
+    std::queue<std::shared_ptr<CurrentDetectResult>> tracking_box_list_;
 };
 
 }

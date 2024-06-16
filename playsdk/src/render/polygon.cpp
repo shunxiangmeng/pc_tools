@@ -123,11 +123,10 @@ bool Polygon::render() {
                 indices.push_back(i);
             }
             GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_DYNAMIC_DRAW));
+            GL_CALL(glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0));
         }
 
         //GL_CALL(glBindVertexArray(VAO_));
-        GL_CALL(glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0));
-
         GL_CALL(glBindVertexArray(GL_NONE));
         GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, GL_NONE));
         GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE));
