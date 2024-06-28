@@ -37,6 +37,8 @@ private:
     virtual void run() override;
 
     GLFWwindow* initWindowEnvironment();
+    void processInput(GLFWwindow* window);
+    
     bool initShader();
     bool initShaders();
 

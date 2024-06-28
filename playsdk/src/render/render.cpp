@@ -9,6 +9,7 @@
  ************************************************************************/
 #include <codecvt>
 #include <locale>
+#include <chrono>
 #include "render.h"
 #include "shader.h"
 #include "infra/include/Logger.h"
@@ -162,14 +163,67 @@ static void framebuffer_size_callback(GLFWwindow* window, int32_t width, int32_t
     glViewport(0, 0, width, height);
 }
 
-static void processInput(GLFWwindow* window) {
+static void window_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+}
+
+static void toggleFullscreen(GLFWwindow* window) {
+    static bool fullscreen = false;
+    static int windowedWidth, windowedHeight, windowedX, windowedY;
+    fullscreen = !fullscreen;
+    if (fullscreen) {
+        // 保存当前窗口位置和大小
+        glfwGetWindowPos(window, &windowedX, &windowedY);
+        glfwGetWindowSize(window, &windowedWidth, &windowedHeight);
+
+        // 获取主显示器的视频模式
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        // 设置窗口的显示模式
+        glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+        glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+        glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+        glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+        // 设置全屏模式
+        glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+    } else {
+        // 恢复窗口模式
+        glfwSetWindowMonitor(window, NULL, windowedX, windowedY, windowedWidth, windowedHeight, 0);
+    }
+}
+
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    static std::chrono::high_resolution_clock::time_point lastClickTime;
+    static int clickCount = 0;
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime).count();
+        if (elapsedTime < 300) { // 300毫秒内认为是双击
+            tracef("Double click detected!\n");
+            clickCount = 0;
+            toggleFullscreen(window);
+        } else {
+            clickCount = 1;
+        }
+        lastClickTime = currentTime;
+    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+        tracef("right click detected!\n");
+    } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
+        tracef("middle click detected!\n");
+    }
+}
+
+void Render::processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
 }
 
 GLFWwindow* Render::initWindowEnvironment() {
-    glfwInit();
+    if (!glfwInit()) {
+        errorf("glfwInit failed\n");
+        return nullptr;
+    }
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -179,6 +233,9 @@ GLFWwindow* Render::initWindowEnvironment() {
         return nullptr;
     }
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, window_key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+
     glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         errorf("Failed to initialize GLAD\n");
