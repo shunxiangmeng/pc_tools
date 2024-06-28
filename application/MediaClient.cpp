@@ -9,17 +9,18 @@ MediaClient::MediaClient() {
 }
 
 bool MediaClient::init() {
-    bool ret = client_->connect(server_ip_.data(), 7000);
-    if (!ret) {
-        return false;
-    }
-    client_->startPreview(0, 0, IPrivClient::OnFrameProc(&MediaClient::onMediaFrame, this));
-
     if (!playsdk_->init(playsdk::PlayModeLive)) {
         errorf("playsdk init failed\n");
         return false;
     }
     playsdk_->start();
+    return true;
+
+    bool ret = client_->connect(server_ip_.data(), 7000);
+    if (!ret) {
+        return false;
+    }
+    client_->startPreview(0, 0, IPrivClient::OnFrameProc(&MediaClient::onMediaFrame, this));
 
     /*if (!playsdk_->init(playsdk::PlayModeFile)) {
         errorf("playsdk init failed\n");

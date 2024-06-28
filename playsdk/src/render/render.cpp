@@ -22,6 +22,7 @@ namespace playsdk {
 Render::Render(DecodedFrameList& video_decoded_frame_queue) : video_decoded_frame_queue_(video_decoded_frame_queue) {
     window_width_ = 0;
     window_height_ = 0;
+    dashboard_= std::make_shared<Gui>("dashboard");
 }
 
 Render::~Render() {
@@ -159,6 +160,8 @@ bool Render::initShaders() {
     return true;
 }
 
+WindowEvent s_window_input_event;
+
 static void framebuffer_size_callback(GLFWwindow* window, int32_t width, int32_t height) {
     glViewport(0, 0, width, height);
 }
@@ -212,6 +215,17 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     }
 }
 
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+    //tracef("Mouse position: (%0.3f, %0.3f)\n", xpos, ypos);
+}
+
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    std::lock_guard<std::mutex> guard(s_window_input_event.mutex);
+    s_window_input_event.whell_scroll_x = (float)xoffset;
+    s_window_input_event.whell_scroll_y = (float)yoffset;
+    //tracef("Mouse wheel scroll: xoffset = %0.1f, yoffset = %0.1f\n", xoffset, yoffset);
+}
+
 void Render::processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -233,8 +247,10 @@ GLFWwindow* Render::initWindowEnvironment() {
         return nullptr;
     }
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetKeyCallback(window, window_key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    //glfwSetKeyCallback(window, window_key_callback);
+    //glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -256,16 +272,16 @@ void Render::setCenterScale(GLFWwindow* window, int32_t video_width, int32_t vid
     window_width_ = window_width;
     window_height_ = window_height;
 
-    float video_aspect_ratio = 1.0 * video_width / video_height;
-    float window_aspect_ration = 1.0 * window_width / window_height;
+    float video_aspect_ratio = 1.0f * video_width / video_height;
+    float window_aspect_ration = 1.0f * window_width / window_height;
     if (window_aspect_ration > video_aspect_ratio) {
         // adjust x
-        float window_width_need = 1.0 * video_width / video_height * window_height;
+        float window_width_need = 1.0f * video_width / video_height * window_height;
         center_scale_x_ = window_width_need / window_width;
         center_scale_y_ = 1.0f;
     } else {
         // adjust y
-        float window_height_need = 1.0 * video_height / video_width * window_width;
+        float window_height_need = 1.0f * video_height / video_width * window_width;
         center_scale_y_ = window_height_need / window_height;
         center_scale_x_ = 1.0f;
     }
@@ -324,7 +340,7 @@ bool Render::setTrackingBox(Json::Value data) {
     //tracef("%s\n", data.toStyledString().data());
     auto box = std::make_shared<CurrentDetectResult>();
     box->timestamp = data["timestamp"].asUInt();
-    for (int i = 0; i < data["targets"].size(); i++) {
+    for (uint32_t i = 0; i < data["targets"].size(); i++) {
         Target target;
         target.type = (TargetType)data["targets"][i]["type"].asInt();
         target.id = data["targets"][i]["id"].asUInt();
@@ -354,7 +370,7 @@ void Render::readerTextInfo(GLFWwindow* window) {
     text_.render(model, text.data(), text.length(), glm::vec3(1.0, 1.0, 1.0));
 
     model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(-0.2f, 0.85f, 0.0f));
+    model = glm::translate(model, glm::vec3(-0.3f, 0.85f, 0.0f));
     model = glm::scale(model, glm::vec3(scale, scale, 0.0f));
 
     wchar_t video_pts[512] = {0};
@@ -403,6 +419,76 @@ void Render::adaptiveRender(std::vector<std::vector<Position>>& polyons) {
     }
 }
 
+void Render::renderGui(GLFWwindow* window) {
+
+    glm::mat4 project = glm::mat4(1.0f);
+    glm::mat4 view = glm::mat4(1.0f);
+    glm::mat4 model = glm::mat4(1.0f);
+    float scale = 1.0f;
+
+    float width, height;
+    dashboard_->getWidthHeight(width, height);
+    scale = 0.7;
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    //model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //model = glm::scale(model, glm::vec3(scale * (width / height), scale, 1.0f));
+    dashboard_->setModel(model);
+
+    /*dashboard_->begin(10, 10, width, height);
+    if (ImGui::CollapsingHeader("information")) {
+        ImGui::BulletText("device model:");
+        ImGui::BulletText("device OS:");
+    }
+    ImVec2 window1_pos = ImGui::GetWindowPos();
+    ImVec2 window1_size = ImGui::GetWindowSize();
+    dashboard_->end();
+    
+    double cursor_x, cursor_y;
+    glfwGetCursorPos(window, &cursor_x, &cursor_y);
+    tracef("(%0.1f, %0.1f) (%0.1f, %0.1f) (%0.1f, %0.1f) size(%0.1f, %0.1f)\n", 
+        cursor_x, cursor_y, window1_pos.x, window1_pos.y, cursor_x - window1_pos.x, cursor_y - window1_pos.y, window1_size.x, window1_size.y);
+    dashboard_->updateMousePosition((float)cursor_x - window1_pos.x, (float)cursor_y - window1_pos.y);
+    */
+
+    //dashboard_->begin(10, 10, width, height);
+
+    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
+    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Right, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT));
+    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Middle, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE));
+
+    ImGui::GetIO().MouseWheel = s_window_input_event.whell_scroll_y;
+    ImGui::GetIO().MouseWheelH = s_window_input_event.whell_scroll_x;
+    s_window_input_event.whell_scroll_x = 0;
+    s_window_input_event.whell_scroll_y = 0;
+
+    bool open = true;
+    auto& io = ImGui::GetIO();
+    io.DisplaySize.x = float(width);
+    io.DisplaySize.y = float(height);
+    io.DeltaTime = 1.0f / 60.0f;
+    ImGui::NewFrame();
+    ImGui::SetWindowSize(ImVec2(width, height));
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    ImGui::SetWindowFocus();
+    ImGui::ShowDemoWindow(width, height, &open);
+    //ImGui::End();
+
+    ImVec2 window1_pos = ImGui::GetWindowPos();
+    ImVec2 window1_size = ImGui::GetWindowSize();
+
+    double cursor_x, cursor_y;
+    glfwGetCursorPos(window, &cursor_x, &cursor_y);
+    //tracef("(%0.1f, %0.1f) (%0.1f, %0.1f) (%0.1f, %0.1f) size(%0.1f, %0.1f)\n",
+    //    cursor_x, cursor_y, window1_pos.x, window1_pos.y, cursor_x - window1_pos.x, cursor_y - window1_pos.y, window1_size.x, window1_size.y);
+    dashboard_->updateMousePosition((float)cursor_x - window1_pos.x, (float)cursor_y - window1_pos.y);
+
+    ImGui::Render();
+    //dashboard_->end();
+    dashboard_->render(project, view);
+}
+
+#define RENDER_FPS 60
+
 void Render::run() {
     warnf("render thread start\n");
     bool init_reesult = false;
@@ -429,13 +515,22 @@ void Render::run() {
     
     init_promise_->set_value(std::move(init_reesult));
 
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+    dashboard_->initialize(window_width, window_height);  //set resolution
+
+    auto lastTime = std::chrono::high_resolution_clock::now();
+
     while (!glfwWindowShouldClose(window) && running()) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        double deltaTime = std::chrono::duration<double>(currentTime - lastTime).count();
+
         // input
         processInput(window);
         glfwPollEvents();
 
         //render
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.5f, 0.5f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         renderVideoFrame(window);
@@ -447,8 +542,16 @@ void Render::run() {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         readerTextInfo(window);
 
+        renderGui(window);
+
         glfwSwapBuffers(window);
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+        double elapsedTime = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - currentTime).count();
+        double sleepTime = (1.0f / RENDER_FPS) - elapsedTime;
+        if (sleepTime > 0) {
+            std::this_thread::sleep_for(std::chrono::duration<double>(sleepTime));
+        }
+        lastTime = std::chrono::high_resolution_clock::now();
     }
     glfwTerminate();
     warnf("render thread exit\n");

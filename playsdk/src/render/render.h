@@ -17,6 +17,7 @@
 #include "../DecodedFrame.h"
 #include "polygon.h"
 #include "text.h"
+#include "gui.h"
 #include "hal/Defines.h"
 
 namespace playsdk {
@@ -38,7 +39,7 @@ private:
 
     GLFWwindow* initWindowEnvironment();
     void processInput(GLFWwindow* window);
-    
+
     bool initShader();
     bool initShaders();
 
@@ -47,6 +48,7 @@ private:
     void renderTrackingBox(GLFWwindow* window);
     void setCenterScale(GLFWwindow* window, int32_t video_w, int32_t video_h);
     void adaptiveRender(std::vector<std::vector<Position>>& polyons);
+    void renderGui(GLFWwindow* window);
 
 private:
     std::shared_ptr<Shader> shader_;
@@ -64,13 +66,20 @@ private:
 
     Polygon polyon_;
     Text text_;
+    std::shared_ptr<Gui> dashboard_;
 
-    int64_t current_pts_;
-    int64_t audio_current_pts_;
+    int64_t current_pts_ = 0;
+    int64_t audio_current_pts_ = 0;
     float speed_ = 1.0f;
 
     std::mutex tracking_box_list_mutex_;
     std::queue<std::shared_ptr<CurrentDetectResult>> tracking_box_list_;
 };
+
+typedef struct {
+    std::mutex mutex;
+    float whell_scroll_x;
+    float whell_scroll_y;
+} WindowEvent;
 
 }
