@@ -241,7 +241,7 @@ GLFWwindow* Render::initWindowEnvironment() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "playsdk", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "playsdk", NULL, NULL);
     if (window == nullptr) {
         errorf("Failed to create GLFW window\n");
         return nullptr;
@@ -423,16 +423,11 @@ void Render::renderGui(GLFWwindow* window) {
 
     glm::mat4 project = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 model = glm::mat4(1.0f);
     float scale = 1.0f;
 
-    float width, height;
-    dashboard_->getWidthHeight(width, height);
-    scale = 0.7;
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    //model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    //model = glm::scale(model, glm::vec3(scale * (width / height), scale, 1.0f));
-    dashboard_->setModel(model);
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    dashboard_->resize(width, height);
 
     /*dashboard_->begin(10, 10, width, height);
     if (ImGui::CollapsingHeader("information")) {
@@ -471,7 +466,6 @@ void Render::renderGui(GLFWwindow* window) {
     ImGui::SetWindowPos(ImVec2(0, 0));
     ImGui::SetWindowFocus();
     ImGui::ShowDemoWindow(width, height, &open);
-    //ImGui::End();
 
     ImVec2 window1_pos = ImGui::GetWindowPos();
     ImVec2 window1_size = ImGui::GetWindowSize();

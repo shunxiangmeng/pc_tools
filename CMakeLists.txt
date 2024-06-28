@@ -75,6 +75,8 @@ endfunction()
 
 set_file_group(${CMAKE_SOURCE_DIR} ${APP_SOURCE_FILES} ${APP_SOURCE_HEADER_FILES})
 
+file(COPY ${PROJECT_SOURCE_DIR}/assets/arial.ttf DESTINATION ${CMAKE_BINARY_DIR})
+
 #链接库目录
 link_directories(${APP_LIB_DIRS})
 #指定头文件路径

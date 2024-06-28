@@ -72,7 +72,7 @@ int32_t Audio::putFrame(DecodedFrame frame) {
         infra::Buffer silence(frame.frame_->linesize[0]);
         silence.resize(frame.frame_->linesize[0]);
         memset(silence.data(), 0x00, silence.size());
-        int32_t play_sample_rate = frame.frame_->sample_rate * speed_;
+        int32_t play_sample_rate = int32_t(frame.frame_->sample_rate * speed_);
         int i = 0;
         for (; i < NUMBUFFERS - 1; i++) {
             alBufferData(al_buffers_[i], output_format_, silence.data(), silence.size(), play_sample_rate);
@@ -90,7 +90,7 @@ int32_t Audio::putFrame(DecodedFrame frame) {
         tracef("al_buffers_processed_:%d\n", al_buffers_processed_);
         if (al_buffers_processed_) {
             ALuint buffer;
-            int32_t play_sample_rate = frame.frame_->sample_rate * speed_;
+            int32_t play_sample_rate = int32_t(frame.frame_->sample_rate * speed_);
             alSourceUnqueueBuffers(al_source_id_, 1, &buffer);
             alBufferData(buffer, output_format_, frame.frame_->data[0], frame.frame_->linesize[0], play_sample_rate);
             alSourceQueueBuffers(al_source_id_, 1, &buffer);
@@ -140,7 +140,7 @@ void Audio::run() {
                 infra::Buffer silence(frame.frame_->linesize[0]);
                 silence.resize(frame.frame_->linesize[0]);
                 memset(silence.data(), 0x00, silence.size());
-                int32_t play_sample_rate = frame.frame_->sample_rate * speed_;
+                int32_t play_sample_rate = int32_t(frame.frame_->sample_rate * speed_);
                 int i = 0;
                 for (; i < NUMBUFFERS - 1; i++) {
                     alBufferData(al_buffers_[i], output_format_, silence.data(), silence.size(), play_sample_rate);
@@ -161,7 +161,7 @@ void Audio::run() {
                 while (al_buffers_processed_ && decoded_frame_queue_.size()) {
                     DecodedFrame frame = decoded_frame_queue_.front();
                     ALuint buffer;
-                    int32_t play_sample_rate = frame.frame_->sample_rate * speed_;
+                    int32_t play_sample_rate = int32_t(frame.frame_->sample_rate * speed_);
                     alSourceUnqueueBuffers(al_source_id_, 1, &buffer);
                     alBufferData(buffer, output_format_, frame.frame_->data[0], frame.frame_->linesize[0], play_sample_rate);
                     alSourceQueueBuffers(al_source_id_, 1, &buffer);

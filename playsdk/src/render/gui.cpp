@@ -14,7 +14,8 @@
 
 namespace playsdk {
 Shader Gui::shader_;
-Gui::Gui(std::string name): mName(name), mFramebuffer(0), mTextureColorbuffer(0), mVAO(0), mVBO(0) {
+Gui::Gui(std::string name): mName(name), gl_frame_buffer_(0), texture_colorbuffer_(0), mVAO(0), mVBO(0) {
+    model_ = glm::mat4(1.0f);
 }
 
 Gui::~Gui() {
@@ -70,32 +71,32 @@ bool Gui::initShader() {
 }
 
 bool Gui::initialize(int32_t width, int32_t height) {
-    mWidth = width;
-    mHeight = height;
+    width_ = width;
+    height_ = height;
 
     GuiBase::instance().initialize();
 
     if (!initShader()) {
         return false;
     }
-    if (mFramebuffer) {
+    if (gl_frame_buffer_) {
         return true;
     }
 
-    GL_CALL(glGenFramebuffers(1, &mFramebuffer));
-    GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer));
+    GL_CALL(glGenFramebuffers(1, &gl_frame_buffer_));
+    GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, gl_frame_buffer_));
 
     GL_CALL(glActiveTexture(GL_TEXTURE0));
-    GL_CALL(glGenTextures(1, &mTextureColorbuffer));
-    GL_CALL(glBindTexture(GL_TEXTURE_2D, mTextureColorbuffer));
-    GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mWidth, mHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
+    GL_CALL(glGenTextures(1, &texture_colorbuffer_));
+    GL_CALL(glBindTexture(GL_TEXTURE_2D, texture_colorbuffer_));
+    GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
     GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
     GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
     GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
 
-    GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextureColorbuffer, 0));
+    GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_colorbuffer_, 0));
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         errorf("Framebuffer is not complete!");
         return false;
@@ -125,12 +126,46 @@ bool Gui::initialize(int32_t width, int32_t height) {
     return true;
 }
 
+bool Gui::resize(int32_t width, int32_t height) {
+    if (width == width_ && height == height_) {
+        return true;
+    }
+    width_ = width;
+    height_ = height;
+
+    if (texture_colorbuffer_) {
+        GL_CALL(glDeleteTextures(1, &texture_colorbuffer_));
+        texture_colorbuffer_ = 0;
+    }
+    if (gl_frame_buffer_ == 0) {
+        GL_CALL(glGenFramebuffers(1, &gl_frame_buffer_));
+    }
+    
+    GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, gl_frame_buffer_));
+    GL_CALL(glActiveTexture(GL_TEXTURE0));
+    GL_CALL(glGenTextures(1, &texture_colorbuffer_));
+    GL_CALL(glBindTexture(GL_TEXTURE_2D, texture_colorbuffer_));
+    GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
+    GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+    GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    GL_CALL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+
+    GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_colorbuffer_, 0));
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        errorf("Framebuffer is not complete!\n");
+        return false;
+    }
+    GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
 void Gui::render(const glm::mat4& p, const glm::mat4& v) {
 
     GLenum last_framebuffer = 0; 
     GL_CALL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&last_framebuffer));
-    GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer));
-    GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextureColorbuffer, 0));
+    GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, gl_frame_buffer_));
+    GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_colorbuffer_, 0));
     GL_CALL(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
     GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
@@ -142,68 +177,19 @@ void Gui::render(const glm::mat4& p, const glm::mat4& v) {
     shader_.use(); 
     shader_.setUniformMat4("projection", p);
     shader_.setUniformMat4("view", v);
-    shader_.setUniformMat4("model", mModel);
+    shader_.setUniformMat4("model", model_);
     shader_.setUniformVec3("intersectionPoint", mIntersectionPoint);
 
     GL_CALL(glDisable(GL_CULL_FACE));
     GL_CALL(glEnable(GL_BLEND));
     GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     GL_CALL(glBindVertexArray(mVAO));
-    GL_CALL(glBindTexture(GL_TEXTURE_2D, mTextureColorbuffer));
+    GL_CALL(glBindTexture(GL_TEXTURE_2D, texture_colorbuffer_));
     GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 6));
 }
 
 void Gui::setModel(const glm::mat4& m) {
-    mModel = m;
-}
-
-bool Gui::isIntersectWithLine(const glm::vec3& linePoint, const glm::vec3& lineDirection) {
-
-    glm::vec3 planePoint = glm::vec3(mModel * glm::vec4(-1.0f, 1.0f, 0.0f, 1.0f));
-    glm::vec3 planePoint1 = glm::vec3(mModel * glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
-    glm::vec3 planePoint2 = glm::vec3(mModel * glm::vec4(-1.0f, -1.0f, 0.0f, 1.0f));
-
-    glm::vec3 planeNormal = glm::cross(planePoint - planePoint1, planePoint - planePoint2);
-    planeNormal = glm::normalize(planeNormal);
-
-    glm::vec3 point{};
-    float vpt = lineDirection.x * planeNormal.x + lineDirection.y * planeNormal.y + lineDirection.z * planeNormal.z;
-    if (vpt == 0) {
-        //The direction of the line is parallel to the direction of the plane, there is no intersection point
-        return false;
-    } else {
-        float t = ((planePoint.x - linePoint.x) * planeNormal.x + (planePoint.y - linePoint.y) * planeNormal.y + (planePoint.z - linePoint.z) * planeNormal.z) / vpt;
-        point.x = linePoint.x + lineDirection.x * t;
-        point.y = linePoint.y + lineDirection.y * t;
-        point.z = linePoint.z + lineDirection.z * t;
-    }
-
-    if (point.x >= planePoint2.x && point.x <= planePoint1.x 
-     && point.y >= planePoint2.y && point.y <= planePoint1.y) {
-        //infof("t:%f, linePoint(%.3f, %.3f, %.3f), lineDirection(%.3f, %.3f, %.3f)", t, linePoint.x, linePoint.y, linePoint.z, lineDirection.x, lineDirection.y, lineDirection.z);
-        //infof("cross point(%.3f, %.3f, %.3f), planePoint2(%.3f, %.3f, %.3f), planeNormal(%.3f, %.3f, %.3f)", point.x, point.y, point.z, planePoint2.x, planePoint2.y, planePoint2.z, planeNormal.x, planeNormal.y, planeNormal.z);
-        float width = fabs(planePoint1.x - planePoint2.x);
-        float height = fabs(planePoint1.y - planePoint2.y);
-
-        /* gui coordinate system
-        (0,0)---------------(1,0) 
-          |                   |
-          |                   |
-        (0,1)---------------(1,1)
-        */
-        float x = point.x - planePoint.x;
-        float y = planePoint.y - point.y;
-        float posx = x / width * mWidth;
-        float posy = y / height * mHeight;
-
-        updateMousePosition(posx, posy);
-        mIntersectionPoint = point;
-
-        return true;
-    } else {
-        mIntersectionPoint = {100.0, 0.0, 0.0};
-        return false;
-    }
+    model_ = m;
 }
 
 void Gui::updateMousePosition(float x, float y) {
@@ -221,14 +207,14 @@ void Gui::triggerEvent(bool down) {
 }
 
 void Gui::getWidthHeight(float& width, float& height) {
-    width = float(mWidth);
-    height = float(mHeight);
+    width = float(width_);
+    height = float(height_);
 }
 
 void Gui::active() {
     auto& io = ImGui::GetIO();
-    io.DisplaySize.x = float(mWidth);
-    io.DisplaySize.y = float(mHeight);
+    io.DisplaySize.x = float(width_);
+    io.DisplaySize.y = float(height_);
     io.DeltaTime = 1.0f / 60.0f;
 }
 
