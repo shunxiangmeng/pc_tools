@@ -69,6 +69,11 @@ bool Polygon::initialize() {
     return true;
 }
 
+void Polygon::setCenterScale(float x, float y) {
+    center_scale_x_ = x;
+    center_scale_y_ = y;
+}
+
 void Polygon::setPointLines(std::vector<std::vector<Position>>& polyons) {
     polyons_ = polyons;
     for (auto& polygon : polyons_) {
@@ -88,8 +93,8 @@ void Polygon::setPointLines(std::vector<std::vector<Position>>& polyons) {
 
             position.y = 1 - position.y;
 
-            position.x = position.x * 2 - 1;
-            position.y = position.y * 2 - 1;
+            position.x = center_scale_x_ * (position.x * 2 - 1);
+            position.y = center_scale_y_ * (position.y * 2 - 1);
         }
     }
     update_data_ = true;

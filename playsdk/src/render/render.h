@@ -44,6 +44,7 @@ private:
     void readerTextInfo(GLFWwindow* window);
     void renderTrackingBox(GLFWwindow* window);
     void setCenterScale(GLFWwindow* window, int32_t video_w, int32_t video_h);
+    void adaptiveRender(std::vector<std::vector<Position>>& polyons);
 
 private:
     std::shared_ptr<Shader> shader_;

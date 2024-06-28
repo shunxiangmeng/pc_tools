@@ -173,7 +173,7 @@ GLFWwindow* Render::initWindowEnvironment() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "playsdk", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "playsdk", NULL, NULL);
     if (window == nullptr) {
         errorf("Failed to create GLFW window\n");
         return nullptr;
@@ -214,6 +214,8 @@ void Render::setCenterScale(GLFWwindow* window, int32_t video_width, int32_t vid
     }
     shader_->setUniformFloat("center_sacle_y", center_scale_y_);
     shader_->setUniformFloat("center_sacle_x", center_scale_x_);
+
+    polyon_.setCenterScale(center_scale_x_, center_scale_y_);
 }
 
 void Render::renderVideoFrame(GLFWwindow* window) {
@@ -331,7 +333,17 @@ void Render::renderTrackingBox(GLFWwindow* window) {
         } 
     }
     //tracef("polyons size:%d\n", polyons.size());
+    //adaptiveRender(polyons);
     polyon_.setPointLines(polyons);
+}
+
+void Render::adaptiveRender(std::vector<std::vector<Position>>& polyons) {
+    for (auto& polygon : polyons) {
+        for (auto& position : polygon) {
+            position.x = position.x * center_scale_x_;
+            position.y = position.y * center_scale_y_;
+        }
+    }
 }
 
 void Render::run() {

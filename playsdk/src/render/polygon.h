@@ -24,6 +24,7 @@ public:
     bool initialize();
     void setPointLines(std::vector<std::vector<Position>> &polyons);
     bool render();
+    void setCenterScale(float x, float y);
 private:
     bool initShader();
 
@@ -34,6 +35,9 @@ private:
     GLuint EBO_ = 0;
     std::vector<std::vector<Position>> polyons_;
     bool update_data_ = false;
+
+    float center_scale_x_ = 1.0f;
+    float center_scale_y_ = 1.0f;
 };
 
 

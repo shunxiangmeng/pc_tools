@@ -14,6 +14,8 @@ set(CMAKE_CXX_STANDARD 14)
 #编译详情
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+include(${PROJECT_SOURCE_DIR}/Toolchains.cmake)
+
 #禁止编译警告：warning C4819：该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
 add_compile_options(/wd4819)
 add_compile_options(/wd4200)  #禁止C4200警告
@@ -22,6 +24,7 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)  # 禁止C4996警告
 
 #依赖库信息
 set(APP_DEPEND_LIBS)
+set(APP_LIB_DIRS)
 include(${PROJECT_SOURCE_DIR}/playsdk/Linklib.cmake)
 
 #头文件路径
@@ -72,7 +75,8 @@ endfunction()
 
 set_file_group(${CMAKE_SOURCE_DIR} ${APP_SOURCE_FILES} ${APP_SOURCE_HEADER_FILES})
 
-
+#链接库目录
+link_directories(${APP_LIB_DIRS})
 #指定头文件路径
 include_directories(${APP_INCLUDE_DIRS})
 add_executable(${Tartget} ${APP_SOURCE_FILES} ${APP_SOURCE_HEADER_FILES})
