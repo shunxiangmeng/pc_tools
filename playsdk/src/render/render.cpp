@@ -16,13 +16,15 @@
 #include "infra/include/Timestamp.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_glfw.h"
 
 namespace playsdk {
 
 Render::Render(DecodedFrameList& video_decoded_frame_queue) : video_decoded_frame_queue_(video_decoded_frame_queue) {
     window_width_ = 0;
     window_height_ = 0;
-    dashboard_= std::make_shared<Gui>("dashboard");
+    //dashboard_= std::make_shared<Gui>("dashboard");
 }
 
 Render::~Render() {
@@ -232,7 +234,12 @@ void Render::processInput(GLFWwindow* window) {
     }
 }
 
+static void glfw_error_callback(int error, const char* description) {
+    errorf("GLFW Error %d: %s\n", error, description);
+}
+
 GLFWwindow* Render::initWindowEnvironment() {
+    glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         errorf("glfwInit failed\n");
         return nullptr;
@@ -253,6 +260,7 @@ GLFWwindow* Render::initWindowEnvironment() {
     glfwSetScrollCallback(window, scroll_callback);
 
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(1); // Enable vsync
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         errorf("Failed to initialize GLAD\n");
         glfwTerminate();
@@ -420,65 +428,33 @@ void Render::adaptiveRender(std::vector<std::vector<Position>>& polyons) {
 }
 
 void Render::renderGui(GLFWwindow* window) {
-
-    glm::mat4 project = glm::mat4(1.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    float scale = 1.0f;
-
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    dashboard_->resize(width, height);
-
-    /*dashboard_->begin(10, 10, width, height);
-    if (ImGui::CollapsingHeader("information")) {
-        ImGui::BulletText("device model:");
-        ImGui::BulletText("device OS:");
-    }
-    ImVec2 window1_pos = ImGui::GetWindowPos();
-    ImVec2 window1_size = ImGui::GetWindowSize();
-    dashboard_->end();
-    
-    double cursor_x, cursor_y;
-    glfwGetCursorPos(window, &cursor_x, &cursor_y);
-    tracef("(%0.1f, %0.1f) (%0.1f, %0.1f) (%0.1f, %0.1f) size(%0.1f, %0.1f)\n", 
-        cursor_x, cursor_y, window1_pos.x, window1_pos.y, cursor_x - window1_pos.x, cursor_y - window1_pos.y, window1_size.x, window1_size.y);
-    dashboard_->updateMousePosition((float)cursor_x - window1_pos.x, (float)cursor_y - window1_pos.y);
-    */
-
-    //dashboard_->begin(10, 10, width, height);
-
-    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
-    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Right, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT));
-    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Middle, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE));
-
-    ImGui::GetIO().MouseWheel = s_window_input_event.whell_scroll_y;
-    ImGui::GetIO().MouseWheelH = s_window_input_event.whell_scroll_x;
-    s_window_input_event.whell_scroll_x = 0;
-    s_window_input_event.whell_scroll_y = 0;
-
-    bool open = true;
-    auto& io = ImGui::GetIO();
-    io.DisplaySize.x = float(width);
-    io.DisplaySize.y = float(height);
-    io.DeltaTime = 1.0f / 60.0f;
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::SetWindowSize(ImVec2(width, height));
-    ImGui::SetWindowPos(ImVec2(0, 0));
-    ImGui::SetWindowFocus();
-    ImGui::ShowDemoWindow(width, height, &open);
-
-    ImVec2 window1_pos = ImGui::GetWindowPos();
-    ImVec2 window1_size = ImGui::GetWindowSize();
-
-    double cursor_x, cursor_y;
-    glfwGetCursorPos(window, &cursor_x, &cursor_y);
-    //tracef("(%0.1f, %0.1f) (%0.1f, %0.1f) (%0.1f, %0.1f) size(%0.1f, %0.1f)\n",
-    //    cursor_x, cursor_y, window1_pos.x, window1_pos.y, cursor_x - window1_pos.x, cursor_y - window1_pos.y, window1_size.x, window1_size.y);
-    dashboard_->updateMousePosition((float)cursor_x - window1_pos.x, (float)cursor_y - window1_pos.y);
-
+    bool show_demo_window = true;
+    ImGui::ShowDemoWindow(&show_demo_window);
     ImGui::Render();
-    //dashboard_->end();
-    dashboard_->render(project, view);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+bool Render::initGui(GLFWwindow* window) {
+    const char* glsl_version = "#version 130";
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    return true;
 }
 
 #define RENDER_FPS 60
@@ -504,14 +480,18 @@ void Render::run() {
             glfwTerminate();
             break;
         }
+        if (!initGui(window)) {
+            glfwTerminate();
+            break;
+        }
         init_reesult = true;
     } while (0);
     
     init_promise_->set_value(std::move(init_reesult));
 
-    int window_width, window_height;
-    glfwGetWindowSize(window, &window_width, &window_height);
-    dashboard_->initialize(window_width, window_height);  //set resolution
+    //int window_width, window_height;
+    //glfwGetWindowSize(window, &window_width, &window_height);
+    //dashboard_->initialize(window_width, window_height);  //set resolution
 
     auto lastTime = std::chrono::high_resolution_clock::now();
 
@@ -524,6 +504,9 @@ void Render::run() {
         glfwPollEvents();
 
         //render
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
         glClearColor(0.5f, 0.5f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 

@@ -17,7 +17,6 @@
 #include "../DecodedFrame.h"
 #include "polygon.h"
 #include "text.h"
-#include "gui.h"
 #include "hal/Defines.h"
 
 namespace playsdk {
@@ -42,6 +41,7 @@ private:
 
     bool initShader();
     bool initShaders();
+    bool initGui(GLFWwindow* window);
 
     void renderVideoFrame(GLFWwindow* window);
     void readerTextInfo(GLFWwindow* window);
@@ -66,7 +66,6 @@ private:
 
     Polygon polyon_;
     Text text_;
-    std::shared_ptr<Gui> dashboard_;
 
     int64_t current_pts_ = 0;
     int64_t audio_current_pts_ = 0;
