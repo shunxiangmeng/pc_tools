@@ -431,8 +431,96 @@ void Render::renderGui(GLFWwindow* window) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    bool show_demo_window = true;
-    ImGui::ShowDemoWindow(&show_demo_window);
+
+    ImGuiIO& io = ImGui::GetIO();
+    static bool show_another_window = false;
+    static bool show_demo_window = true;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+
+
+
+
+    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+    ImGui::Begin("config");
+    if (ImGui::BeginTabBar("root_tabbar", tab_bar_flags)) {
+        if (ImGui::BeginTabItem("video")) {
+            if (ImGui::BeginTable("split", 3)) {
+                ImGui::TableNextColumn(); ImGui::Text("stream type: ");
+                ImGui::TableNextColumn(); ImGui::Text("main");
+                ImGui::TableNextColumn(); ImGui::Text("sub");
+
+                ImGui::TableNextColumn(); ImGui::Text("resolution:");
+                ImGui::TableNextColumn();
+                const char* items0[] = { "1920x1080", "640x480" };
+                static int item_current0 = 0;
+                ImGui::Combo("", &item_current0, items0, IM_ARRAYSIZE(items0));
+
+                ImGui::TableNextColumn();
+                const char* items1[] = { "1920x1080", "640x480" };
+                static int item_current1 = 0;
+                ImGui::Combo("0", &item_current0, items1, IM_ARRAYSIZE(items1));
+
+                ImGui::TableNextColumn(); ImGui::Text("bitrate type:");
+                ImGui::TableNextColumn();
+                const char* bitrate_type[] = { "VBR", "CBR" };
+                ImGui::Combo("1", &item_current0, bitrate_type, IM_ARRAYSIZE(bitrate_type));
+                ImGui::TableNextColumn();
+                ImGui::Combo("2", &item_current0, bitrate_type, IM_ARRAYSIZE(bitrate_type));
+
+                ImGui::EndTable();
+            }
+
+
+            ImGui::Text("This is the Avocado tab!blah blah blah blah blah");
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("audio")) {
+            ImGui::Text("This is the Broccoli tab!\nblah blah blah blah blah");
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Cucumber")) {
+            ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    ImGui::End();
+
+
+
+
+
+
+
+
+
+    {
+        static float f = 0.0f;
+        static int counter = 0;
+
+        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+        ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+        ImGui::Checkbox("Another Window", &show_another_window);
+
+        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            counter++;
+        ImGui::SameLine();
+        ImGui::Text("counter = %d", counter);
+
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::End();
+    }
+
+    if (show_demo_window) {
+        ImGui::ShowDemoWindow(&show_demo_window);
+    }
+
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -447,8 +535,9 @@ bool Render::initGui(GLFWwindow* window) {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsDark();
     //ImGui::StyleColorsLight();
+    ImGui::StyleColorsClassic();
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
