@@ -440,7 +440,6 @@ void Render::renderGui(GLFWwindow* window) {
         client->interaction((void*)window);
     }
 
-
 #if 0
 
     ImGuiIO& io = ImGui::GetIO();
@@ -452,7 +451,7 @@ void Render::renderGui(GLFWwindow* window) {
         static float f = 0.0f;
         static int counter = 0;
 
-        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+        ImGui::Begin("你好Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
         ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
         ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
@@ -489,6 +488,11 @@ bool Render::initGui(GLFWwindow* window) {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+    if (io.Fonts->AddFontFromFileTTF("./simhei.ttf", 16.0f, NULL,io.Fonts->GetGlyphRangesChineseSimplifiedCommon()) == nullptr) {
+        errorf("imgui load ttf error\n");
+        return false;
+    }
+
     // Setup Dear ImGui style
     //ImGui::StyleColorsDark();
     //ImGui::StyleColorsLight();
@@ -501,7 +505,7 @@ bool Render::initGui(GLFWwindow* window) {
     return true;
 }
 
-#define RENDER_FPS 60
+#define RENDER_FPS 65
 
 void Render::run() {
     warnf("render thread start\n");
