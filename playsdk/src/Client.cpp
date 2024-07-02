@@ -9,6 +9,7 @@
  ************************************************************************/
 #include "Client.h"
 #include "imgui/imgui.h"
+#include "infra/include/thread/WorkThreadPool.h"
 
 namespace playsdk {
 
@@ -74,6 +75,51 @@ void Client::initInteraction() {
     video_codec_type_.push_back("H.265");
 }
 
+void Client::login() {
+    infra::WorkThreadPool::instance()->async([this] () {
+        uint16_t port = atoi(interaction_login_.server_port);
+        tracef("login %s:%d \n", interaction_login_.server_ip, port);
+        bool ret = client_->connect(interaction_login_.server_ip, port);
+        if (!ret) {
+            errorf("connect %s:%d failed\n", interaction_login_.server_ip, port);
+            return;
+        }
+    });
+}
+
+void Client::logout() {
+    tracef("logout+++\n");
+}
+
+void Client::interaction_tab_login() {
+    if (ImGui::BeginTabItem("login")) {
+        ImGui::Text("server ip:  ");
+        ImGui::SameLine();
+        ImGui::InputText("##server_ip", interaction_login_.server_ip, sizeof(interaction_login_.server_ip));
+        ImGui::Text("server port:");
+        ImGui::SameLine();
+        ImGui::InputText("##server_port", interaction_login_.server_port, sizeof(interaction_login_.server_port), ImGuiInputTextFlags_CharsDecimal);
+        ImGui::Text("username:   ");
+        ImGui::SameLine();
+        ImGui::InputText("##username", interaction_login_.username, sizeof(interaction_login_.username));
+        ImGui::Text("password:   ");
+        ImGui::SameLine();
+        ImGui::InputText("##password", interaction_login_.password, sizeof(interaction_login_.password), ImGuiInputTextFlags_Password);
+        
+        ImGui::Text("            ");
+        ImGui::SameLine();
+        if (ImGui::Button("Login")) {
+            login();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Logout")) {
+            logout();
+        }
+        
+        ImGui::EndTabItem();
+    }
+}
+
 void Client::interaction_tab_video() {
     if (ImGui::BeginTabItem("video")) {
         if (ImGui::BeginTable("split", 3)) {
@@ -124,6 +170,7 @@ void Client::interaction(void* window) {
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
     ImGui::Begin("config");
     if (ImGui::BeginTabBar("root_tabbar", tab_bar_flags)) {
+        interaction_tab_login();
         interaction_tab_video();
 
         if (ImGui::BeginTabItem("audio")) {
