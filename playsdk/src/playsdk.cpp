@@ -41,6 +41,10 @@ bool Playsdk::init(PlayMode playmode) {
     return true;
 }
 
+void Playsdk::setClient(std::weak_ptr<IClient> client) {
+    render_->setClient(client);
+}
+
 bool Playsdk::inputMediaFrame(MediaFrame frame) {
     if (playmode_ == PlayModeFile) {
         return false;

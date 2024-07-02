@@ -162,6 +162,10 @@ bool Render::initShaders() {
     return true;
 }
 
+void Render::setClient(std::weak_ptr<IClient> client) {
+    client_ = client;
+}
+
 WindowEvent s_window_input_event;
 
 static void framebuffer_size_callback(GLFWwindow* window, int32_t width, int32_t height) {
@@ -248,7 +252,7 @@ GLFWwindow* Render::initWindowEnvironment() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "playsdk", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "playsdk", NULL, NULL);
     if (window == nullptr) {
         errorf("Failed to create GLFW window\n");
         return nullptr;
@@ -432,68 +436,17 @@ void Render::renderGui(GLFWwindow* window) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    if (auto client = client_.lock()) {
+        client->interaction((void*)window);
+    }
+
+
+#if 0
+
     ImGuiIO& io = ImGui::GetIO();
     static bool show_another_window = false;
     static bool show_demo_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-
-
-
-
-    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-    ImGui::Begin("config");
-    if (ImGui::BeginTabBar("root_tabbar", tab_bar_flags)) {
-        if (ImGui::BeginTabItem("video")) {
-            if (ImGui::BeginTable("split", 3)) {
-                ImGui::TableNextColumn(); ImGui::Text("stream type: ");
-                ImGui::TableNextColumn(); ImGui::Text("main");
-                ImGui::TableNextColumn(); ImGui::Text("sub");
-
-                ImGui::TableNextColumn(); ImGui::Text("resolution:");
-                ImGui::TableNextColumn();
-                const char* items0[] = { "1920x1080", "640x480" };
-                static int item_current0 = 0;
-                ImGui::Combo("", &item_current0, items0, IM_ARRAYSIZE(items0));
-
-                ImGui::TableNextColumn();
-                const char* items1[] = { "1920x1080", "640x480" };
-                static int item_current1 = 0;
-                ImGui::Combo("0", &item_current0, items1, IM_ARRAYSIZE(items1));
-
-                ImGui::TableNextColumn(); ImGui::Text("bitrate type:");
-                ImGui::TableNextColumn();
-                const char* bitrate_type[] = { "VBR", "CBR" };
-                ImGui::Combo("1", &item_current0, bitrate_type, IM_ARRAYSIZE(bitrate_type));
-                ImGui::TableNextColumn();
-                ImGui::Combo("2", &item_current0, bitrate_type, IM_ARRAYSIZE(bitrate_type));
-
-                ImGui::EndTable();
-            }
-
-
-            ImGui::Text("This is the Avocado tab!blah blah blah blah blah");
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("audio")) {
-            ImGui::Text("This is the Broccoli tab!\nblah blah blah blah blah");
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Cucumber")) {
-            ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
-    ImGui::End();
-
-
-
-
-
-
-
-
 
     {
         static float f = 0.0f;
@@ -520,6 +473,8 @@ void Render::renderGui(GLFWwindow* window) {
     if (show_demo_window) {
         ImGui::ShowDemoWindow(&show_demo_window);
     }
+
+#endif
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

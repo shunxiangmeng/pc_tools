@@ -15,6 +15,7 @@
 #include "infra/include/thread/WorkThreadPool.h"
 #include "configManager/include/IConfigManager.h"
 #include "private/include/IPrivClient.h"
+#include "playsdk/include/IClient.h"
 #include "OacClientTest.h"
 #include "MediaClient.h"
 #include "jsoncpp/include/json.h"
@@ -37,9 +38,12 @@ int main(int argc, char* argv[]) {
     OacClientTest oac_client;
     //oac_client.init();
 
-    MediaClient media_client;
-    media_client.init();
-    media_client.subscribeEvent();
+    //MediaClient media_client;
+    //media_client.init();
+    //media_client.subscribeEvent();
+
+    auto client = playsdk::IClient::create();
+    client->init();
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));

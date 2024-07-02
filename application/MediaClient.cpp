@@ -6,6 +6,7 @@ MediaClient::MediaClient() {
     event_client_ = IPrivClient::create();
     playsdk_ = playsdk::IPlaysdk::create();
     server_ip_ = "172.16.9.100";
+    server_port_ = 7000;
 }
 
 bool MediaClient::init() {
@@ -16,7 +17,7 @@ bool MediaClient::init() {
     playsdk_->start();
     return true;
 
-    bool ret = client_->connect(server_ip_.data(), 7000);
+    bool ret = client_->connect(server_ip_.data(), server_port_);
     if (!ret) {
         return false;
     }
@@ -39,7 +40,7 @@ void MediaClient::onMediaFrame(MediaFrameType type, MediaFrame& frame) {
 }
 
 bool MediaClient::subscribeEvent() {
-    if (!event_client_->connect(server_ip_.data(), 7000)) {
+    if (!event_client_->connect(server_ip_.data(), server_port_)) {
         return false;
     }
 

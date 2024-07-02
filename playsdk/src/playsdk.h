@@ -14,6 +14,7 @@
 #include "render/render.h"
 #include "audio/audio.h"
 #include "DecodedFrame.h"
+#include "Client.h"
 #include "common/mediafiles/mp4/MP4Reader.h"
 #include "common/mediaframe/MediaFrameList.h"
 
@@ -25,6 +26,7 @@ public:
     virtual ~Playsdk();
 
     virtual bool init(PlayMode playmode) override;
+    virtual void setClient(std::weak_ptr<IClient> client) override;
     virtual bool inputMediaFrame(MediaFrame frame) override;
     virtual bool setMediaFileName(const char* filename) override;
     virtual bool start() override;

@@ -12,6 +12,7 @@ private:
     void onMediaFrame(MediaFrameType type, MediaFrame& frame);
 private:
     std::string server_ip_;
+    uint16_t server_port_;
     std::shared_ptr<IPrivClient> client_;
     std::shared_ptr<playsdk::IPlaysdk> playsdk_;
     std::shared_ptr<IPrivClient> event_client_;

@@ -11,13 +11,14 @@
 #include <memory>
 #include "common/mediaframe/MediaFrame.h"
 #include "jsoncpp/include/json.h"
+#include "IClient.h"
 
 namespace playsdk {
 
 typedef enum {
     PlayModeLive = 0,
     PlayModeFile
-}PlayMode;
+} PlayMode;
 
 class IPlaysdk {
 public:
@@ -28,6 +29,8 @@ public:
     static std::shared_ptr<IPlaysdk> create();
 
     virtual bool init(PlayMode playmode) = 0;
+
+    virtual void setClient(std::weak_ptr<IClient> client) = 0;
 
     virtual bool inputMediaFrame(MediaFrame frame) = 0;
 

@@ -18,6 +18,7 @@
 #include "polygon.h"
 #include "text.h"
 #include "hal/Defines.h"
+#include "playsdk/include/IClient.h"
 
 namespace playsdk {
 
@@ -33,6 +34,7 @@ public:
     }
     void setAudioCurrentPts(int64_t pts);
     bool setTrackingBox(Json::Value data);
+    void setClient(std::weak_ptr<IClient> client);
 private:
     virtual void run() override;
 
@@ -51,6 +53,7 @@ private:
     void renderGui(GLFWwindow* window);
 
 private:
+    std::weak_ptr<IClient> client_;
     std::shared_ptr<Shader> shader_;
     std::shared_ptr<std::promise<bool>> init_promise_;
     DecodedFrameList& video_decoded_frame_queue_;
