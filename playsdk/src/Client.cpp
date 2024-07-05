@@ -63,6 +63,10 @@ bool Client::subscribeEvent() {
 }
 
 void Client::initInteraction() {
+
+    video_input_format_str_list_.push_back("PAL(25fps)");
+    video_input_format_str_list_.push_back("NTSC(30fps)");
+
     resolution_.push_back("2560x1440");
     resolution_.push_back("1920x1080");
     resolution_.push_back("1280x720");
@@ -84,6 +88,8 @@ void Client::login() {
             errorf("connect %s:%d failed\n", interaction_login_.server_ip, port);
             return;
         }
+        infof("login %s:%d succ\n", interaction_login_.server_ip, port);
+        client_->startPreview(0, 0, IPrivClient::OnFrameProc(&Client::onMediaFrame, this));
     });
 }
 
@@ -122,18 +128,23 @@ void Client::interaction_tab_login() {
 
 void Client::interaction_tab_video() {
     if (ImGui::BeginTabItem("video")) {
+        ImGui::Text(u8"ÖÆÊ½: ");
+        ImGui::SameLine();
+        ImGui::Combo("##video_format", &video_input_format_index_, &video_input_format_str_list_[0], video_input_format_str_list_.size());
+        ImGui::Separator();
+        ImGui::SeparatorText("video");
         if (ImGui::BeginTable("split", 3)) {
             ImGui::TableNextColumn(); ImGui::Text("stream type: ");
             ImGui::TableNextColumn(); ImGui::Text("    main");
             ImGui::TableNextColumn(); ImGui::Text("    sub");
 
-            ImGui::TableNextColumn(); ImGui::Text("resolution:");
-            ImGui::TableNextColumn(); ImGui::Combo("##main_resolution", &main_resolution_index_, &resolution_[0], resolution_.size());
-            ImGui::TableNextColumn(); ImGui::Combo("##sub_resolution", &sub_resolution_index_, &resolution_[0], resolution_.size());
-
             ImGui::TableNextColumn(); ImGui::Text("encode type:");
             ImGui::TableNextColumn(); ImGui::Combo("##main_encode", &main_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size());
             ImGui::TableNextColumn(); ImGui::Combo("##sub_encode", &sub_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size());
+
+            ImGui::TableNextColumn(); ImGui::Text("resolution:");
+            ImGui::TableNextColumn(); ImGui::Combo("##main_resolution", &main_resolution_index_, &resolution_[0], resolution_.size());
+            ImGui::TableNextColumn(); ImGui::Combo("##sub_resolution", &sub_resolution_index_, &resolution_[0], resolution_.size());
 
             static char main_fps[32] = { "25" };
             static char sub_fps[32] = { "25" };
@@ -157,6 +168,18 @@ void Client::interaction_tab_video() {
             ImGui::TableNextColumn(); ImGui::InputText("##main_decimal", main_bitrate, sizeof(main_bitrate), ImGuiInputTextFlags_CharsDecimal);
             ImGui::TableNextColumn(); ImGui::InputText("##sub_decimal", sub_bitrate, sizeof(sub_bitrate), ImGuiInputTextFlags_CharsDecimal);
 
+            uint8_t image_quality_min = 0;
+            uint8_t image_quality_max = 100;
+            static uint8_t image_quality = 50;
+            ImGui::TableNextColumn(); ImGui::Text("image quality: ");
+            ImGui::TableNextColumn(); ImGui::SliderScalar("##main_image_quality", ImGuiDataType_U8, &image_quality, &image_quality_min, &image_quality_max, "%d");
+            ImGui::TableNextColumn(); ImGui::SliderScalar("##sub_image_quality", ImGuiDataType_U8, &image_quality, &image_quality_min, &image_quality_max, "%d");
+
+            static uint8_t bitrate_smooth = 50;
+            ImGui::TableNextColumn(); ImGui::Text("bitrate smooth: ");
+            ImGui::TableNextColumn(); ImGui::SliderScalar("##main_bitrate_smooth", ImGuiDataType_U8, &bitrate_smooth, &image_quality_min, &image_quality_max, "%d");
+            ImGui::TableNextColumn(); ImGui::SliderScalar("##sub_bitrate_smooth", ImGuiDataType_U8, &bitrate_smooth, &image_quality_min, &image_quality_max, "%d");
+
             ImGui::EndTable();
         }
         ImGui::Text("This is the Avocado tab!blah blah blah blah blah");
@@ -177,7 +200,7 @@ void Client::interaction(void* window) {
             ImGui::Text("This is the Broccoli tab!\nblah blah blah blah blah");
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Cucumber")) {
+        if (ImGui::BeginTabItem("image")) {
             ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
             ImGui::EndTabItem();
         }

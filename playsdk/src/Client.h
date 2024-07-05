@@ -55,6 +55,10 @@ private:
     int32_t sub_bitrate_type_ = 0;
     int32_t sub_video_encode_type_index_ = 0;
 
+    //video
+    std::vector<char*> video_input_format_str_list_;
+    int32_t video_input_format_index_ = 0;
+
     struct VideoConfig {
         std::vector<char*> resolution_str_list;
         std::vector<char*> bitrate_str_list;
@@ -65,6 +69,7 @@ private:
         char fps_str[8];
         char gop_str[8];
         char bitrate_str[8];
+        uint8_t image_quality_;
     };
 
     struct InteractionLogin {
@@ -72,7 +77,7 @@ private:
         char server_port[8];
         char username[32];
         char password[32];
-        InteractionLogin() : server_ip("172.16.9.100"), server_port("7000"), username("admin"), password("Ulucu888") {
+        InteractionLogin() : server_ip("172.16.9.37"), server_port("7000"), username("admin"), password("Ulucu888") {
         }
     };
 
