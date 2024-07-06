@@ -133,6 +133,13 @@ void Client::onSetVideoFormat(int32_t index) {
     });
 }
 
+void Client::onSetVideoConfig() {
+    infra::WorkThreadPool::instance()->async([this] () {
+        Json::Value video_config = Json::objectValue;
+        client_->setVideoConfig(video_config);
+    });
+}
+
 void Client::interaction_tab_login() {
     if (ImGui::BeginTabItem("login")) {
         ImGui::Text("server ip:  ");
@@ -178,7 +185,10 @@ void Client::interaction_tab_video() {
             ImGui::TableNextColumn(); ImGui::Text("    sub");
 
             ImGui::TableNextColumn(); ImGui::Text("encode type:");
-            ImGui::TableNextColumn(); ImGui::Combo("##main_encode", &main_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size());
+            ImGui::TableNextColumn(); 
+            if (ImGui::Combo("##main_encode", &main_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size())) {
+                onSetVideoConfig();
+            }
             ImGui::TableNextColumn(); ImGui::Combo("##sub_encode", &sub_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size());
 
             ImGui::TableNextColumn(); ImGui::Text("resolution:");

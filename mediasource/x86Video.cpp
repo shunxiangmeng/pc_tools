@@ -75,6 +75,10 @@ bool x86Video::stopStream(int32_t channel, int32_t sub_channel, VideoStreamProc 
     return false;
 }
 
+bool x86Video::streamIsStarted(int32_t channel, int32_t sub_channel) {
+    return true;
+}
+
 bool x86Video::getEncodeParams(int32_t channel, int32_t sub_channel, VideoEncodeParams& params) {
     VideoFrameInfo info;
     x86FileMediaSource::instance().getVideoInfo(info);

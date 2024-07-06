@@ -33,6 +33,7 @@ private:
     void onLoginSucc();
 
     void onSetVideoFormat(int32_t index);
+    void onSetVideoConfig();
 
     void interaction_tab_login();
     void interaction_tab_video();
