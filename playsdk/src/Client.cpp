@@ -75,8 +75,8 @@ void Client::initInteraction() {
     bitrate_type_.push_back("VBR");
     bitrate_type_.push_back("CBR");
 
-    video_codec_type_.push_back("H.264");
-    video_codec_type_.push_back("H.265");
+    video_codec_type_.push_back("H264");
+    video_codec_type_.push_back("H265");
 }
 
 void Client::login() {
@@ -89,12 +89,48 @@ void Client::login() {
             return;
         }
         infof("login %s:%d succ\n", interaction_login_.server_ip, port);
-        client_->startPreview(0, 0, IPrivClient::OnFrameProc(&Client::onMediaFrame, this));
+        onLoginSucc();
     });
 }
 
 void Client::logout() {
     tracef("logout+++\n");
+}
+
+void Client::onLoginSucc() {
+    client_->startPreview(0, 0, IPrivClient::OnFrameProc(&Client::onMediaFrame, this));
+
+    std::string video_format;
+    client_->getVideoFormat(video_format);
+    if (video_format == "pal") {
+        video_input_format_index_ = 0;
+    } else if (video_format == "ntsc") {
+        video_input_format_index_ = 1;
+    }
+
+    Json::Value video_config;
+    client_->getVideoConfig(video_config);
+}
+
+void Client::onSetVideoFormat(int32_t index) {
+    infra::WorkThreadPool::instance()->async([this, index] () {
+        std::string video_format;
+        if (index == 0) {
+            video_format = "pal";
+        } else if (index == 1) {
+            video_format = "ntsc";
+        } else {
+            return;
+        }
+        client_->setVideoFormat(video_format);
+
+        client_->getVideoFormat(video_format);
+        if (video_format == "pal") {
+            video_input_format_index_ = 0;
+        } else if (video_format == "ntsc") {
+            video_input_format_index_ = 1;
+        }
+    });
 }
 
 void Client::interaction_tab_login() {
@@ -127,10 +163,13 @@ void Client::interaction_tab_login() {
 }
 
 void Client::interaction_tab_video() {
+
     if (ImGui::BeginTabItem("video")) {
-        ImGui::Text(u8"ÖÆÊ½: ");
+        ImGui::Text(u8"ï¿½ï¿½Ê½: ");
         ImGui::SameLine();
-        ImGui::Combo("##video_format", &video_input_format_index_, &video_input_format_str_list_[0], video_input_format_str_list_.size());
+        if (ImGui::Combo("##video_format", &video_input_format_index_, &video_input_format_str_list_[0], video_input_format_str_list_.size())) {
+            onSetVideoFormat(video_input_format_index_);
+        }
         ImGui::Separator();
         ImGui::SeparatorText("video");
         if (ImGui::BeginTable("split", 3)) {

@@ -30,6 +30,9 @@ private:
 
     void login();
     void logout();
+    void onLoginSucc();
+
+    void onSetVideoFormat(int32_t index);
 
     void interaction_tab_login();
     void interaction_tab_video();
@@ -77,7 +80,7 @@ private:
         char server_port[8];
         char username[32];
         char password[32];
-        InteractionLogin() : server_ip("172.16.9.37"), server_port("7000"), username("admin"), password("Ulucu888") {
+        InteractionLogin() : server_ip("192.168.2.53"), server_port("7000"), username("admin"), password("Ulucu888") {
         }
     };
 
