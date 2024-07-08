@@ -99,17 +99,9 @@ void Client::logout() {
 
 void Client::onLoginSucc() {
     client_->startPreview(0, 0, IPrivClient::OnFrameProc(&Client::onMediaFrame, this));
-
-    std::string video_format;
-    client_->getVideoFormat(video_format);
-    if (video_format == "pal") {
-        video_input_format_index_ = 0;
-    } else if (video_format == "ntsc") {
-        video_input_format_index_ = 1;
-    }
-
     Json::Value video_config;
     client_->getVideoConfig(video_config);
+    onGetVideoConfig(video_config);
 }
 
 void Client::onSetVideoFormat(int32_t index) {
@@ -133,9 +125,79 @@ void Client::onSetVideoFormat(int32_t index) {
     });
 }
 
+void Client::onGetVideoConfig(Json::Value &root) {
+    if (root.isMember("format") && root["format"].isString()) {
+        std::string video_format = root["format"].asString();
+        if (video_format == "pal") {
+            video_input_format_index_ = 0;
+        } else if (video_format == "ntsc") {
+            video_input_format_index_ = 1;
+        }
+    }
+
+    if (!root.isMember("config") || !root["config"].isArray()) {
+        return;
+    }
+    Json::Value &config = root["config"];
+    for (auto &it : config) {
+        VideoConfig video_config;
+
+        video_config.encode_str_list.push_back("H264");
+        video_config.encode_str_list.push_back("H265");
+        std::string codec = it["codec"].asString();
+        for (int i = 0; i < video_config.encode_str_list.size(); i++) {
+            if (codec == video_config.encode_str_list[i]) {
+                video_config.encode_type_index = i;
+            }
+        }
+
+        video_config.resolution_str_list.push_back("2560x1440");
+        video_config.resolution_str_list.push_back("1920x1080");
+        video_config.resolution_str_list.push_back("1280x720");
+        video_config.resolution_str_list.push_back("640x480");
+        int32_t width = it["width"].asInt();
+        int32_t height = it["height"].asInt();
+        std::string resolution = std::to_string(width) + "x" + std::to_string(height);
+        for (int i = 0; i < video_config.resolution_str_list.size(); i++) {
+            if (resolution == video_config.resolution_str_list[i]) {
+                video_config.resolution_index = i;
+            }
+        }
+
+        video_config.bitrate_type_str_list.push_back("cbr");
+        video_config.bitrate_type_str_list.push_back("vbr");
+        std::string bitrate_type = it["bitrate_type"].asString();
+        for (int i = 0; i < video_config.bitrate_type_str_list.size(); i++) {
+            if (bitrate_type == video_config.bitrate_type_str_list[i]) {
+                video_config.bitrate_type_index = i;
+            }
+        }
+
+        int fps = it["fps"].asInt();
+        snprintf(video_config.fps_str, sizeof(video_config.fps_str), "%d", fps);
+        int gop = it["gop"].asInt();
+        snprintf(video_config.gop_str, sizeof(video_config.gop_str), "%d", gop);
+        int bitrate = it["bitrate"].asInt();
+        snprintf(video_config.bitrate_str, sizeof(video_config.bitrate_str), "%d", bitrate);
+
+        video_config_.push_back(video_config);
+    }
+}
+
 void Client::onSetVideoConfig() {
     infra::WorkThreadPool::instance()->async([this] () {
         Json::Value video_config = Json::objectValue;
+        Json::Value config = Json::arrayValue;
+        for (int i = 0; i < video_config_.size(); i++) {
+            Json::Value item = Json::objectValue;
+            int32_t width, height;
+            (void)sscanf(video_config_[i].resolution_str_list[video_config_[i].resolution_index], "%dx%d", &width, &height);
+            item["width"] = width;
+            item["height"] = height;
+
+            config.append(item);
+        }
+        video_config["config"] = config;
         client_->setVideoConfig(video_config);
     });
 }
@@ -179,43 +241,67 @@ void Client::interaction_tab_video() {
         }
         ImGui::Separator();
         ImGui::SeparatorText("video");
-        if (ImGui::BeginTable("split", 3)) {
+        int32_t stream_count = video_config_.size();
+        if (stream_count && ImGui::BeginTable("split", stream_count + 1)) {
             ImGui::TableNextColumn(); ImGui::Text("stream type: ");
-            ImGui::TableNextColumn(); ImGui::Text("    main");
-            ImGui::TableNextColumn(); ImGui::Text("    sub");
+            for (int i = 0; i < stream_count; i++) {
+                std::string tmp = "  stream " + std::to_string(i + 1);
+                ImGui::TableNextColumn(); ImGui::Text(tmp.data());
+            }
 
             ImGui::TableNextColumn(); ImGui::Text("encode type:");
-            ImGui::TableNextColumn(); 
-            if (ImGui::Combo("##main_encode", &main_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size())) {
-                onSetVideoConfig();
+            for (int i = 0; i < stream_count; i++) {
+                ImGui::TableNextColumn();
+                std::string name_tmp = "##video_encode" + std::to_string(i);
+                if (ImGui::Combo(name_tmp.data(), &video_config_[i].encode_type_index, &video_config_[i].encode_str_list[0], video_config_[i].encode_str_list.size())) {
+                    onSetVideoConfig();
+                }
             }
-            ImGui::TableNextColumn(); ImGui::Combo("##sub_encode", &sub_video_encode_type_index_, &video_codec_type_[0], video_codec_type_.size());
 
             ImGui::TableNextColumn(); ImGui::Text("resolution:");
-            ImGui::TableNextColumn(); ImGui::Combo("##main_resolution", &main_resolution_index_, &resolution_[0], resolution_.size());
-            ImGui::TableNextColumn(); ImGui::Combo("##sub_resolution", &sub_resolution_index_, &resolution_[0], resolution_.size());
+            for (int i = 0; i < stream_count; i++) {
+                ImGui::TableNextColumn();
+                std::string name_tmp = "##video_resolution" + std::to_string(i);
+                if (ImGui::Combo(name_tmp.data(), &video_config_[i].resolution_index, &video_config_[i].resolution_str_list[0], video_config_[i].resolution_str_list.size())) {
+                    onSetVideoConfig();
+                }
+            }
 
-            static char main_fps[32] = { "25" };
-            static char sub_fps[32] = { "25" };
             ImGui::TableNextColumn(); ImGui::Text("fps:");
-            ImGui::TableNextColumn(); ImGui::InputText("##main_fps", main_fps, sizeof(main_fps), ImGuiInputTextFlags_CharsDecimal);
-            ImGui::TableNextColumn(); ImGui::InputText("##sub_fps", sub_fps, sizeof(sub_fps), ImGuiInputTextFlags_CharsDecimal);
+            for (int i = 0; i < stream_count; i++) {
+                ImGui::TableNextColumn();
+                std::string name_tmp = "##video_fps" + std::to_string(i);
+                if (ImGui::InputText(name_tmp.data(), video_config_[i].fps_str, sizeof(video_config_[i].fps_str), ImGuiInputTextFlags_CharsDecimal)) {
+                    //onSetVideoConfig();
+                }
+            }
 
-            static char main_gop[32] = { "50" };
-            static char sub_gop[32] = { "50" };
-            ImGui::TableNextColumn(); ImGui::Text("GOP:");
-            ImGui::TableNextColumn(); ImGui::InputText("##main_gop", main_gop, sizeof(main_gop), ImGuiInputTextFlags_CharsDecimal);
-            ImGui::TableNextColumn(); ImGui::InputText("##sub_gop", sub_gop, sizeof(sub_gop), ImGuiInputTextFlags_CharsDecimal);
+            ImGui::TableNextColumn(); ImGui::Text("gop:");
+            for (int i = 0; i < stream_count; i++) {
+                ImGui::TableNextColumn();
+                std::string name_tmp = "##video_gop" + std::to_string(i);
+                if (ImGui::InputText(name_tmp.data(), video_config_[i].gop_str, sizeof(video_config_[i].gop_str), ImGuiInputTextFlags_CharsDecimal)) {
+                    //onSetVideoConfig();
+                }
+            }
 
             ImGui::TableNextColumn(); ImGui::Text("bitrate type: ");
-            ImGui::TableNextColumn(); ImGui::Combo("##main_bitrate_type", &main_bitrate_type_, &bitrate_type_[0], bitrate_type_.size());
-            ImGui::TableNextColumn(); ImGui::Combo("##sub_bitrate_type", &sub_bitrate_type_, &bitrate_type_[0], bitrate_type_.size());
+            for (int i = 0; i < stream_count; i++) {
+                ImGui::TableNextColumn();
+                std::string name_tmp = "##video_bitrate_type" + std::to_string(i);
+                if (ImGui::Combo(name_tmp.data(), &video_config_[i].bitrate_type_index, &video_config_[i].bitrate_type_str_list[0], video_config_[i].bitrate_type_str_list.size())) {
+                    //onSetVideoConfig();
+                }
+            }
 
-            static char main_bitrate[32] = { "2048"};
-            static char sub_bitrate[32] = { "450"};
             ImGui::TableNextColumn(); ImGui::Text("bitrate(kbps): ");
-            ImGui::TableNextColumn(); ImGui::InputText("##main_decimal", main_bitrate, sizeof(main_bitrate), ImGuiInputTextFlags_CharsDecimal);
-            ImGui::TableNextColumn(); ImGui::InputText("##sub_decimal", sub_bitrate, sizeof(sub_bitrate), ImGuiInputTextFlags_CharsDecimal);
+            for (int i = 0; i < stream_count; i++) {
+                ImGui::TableNextColumn();
+                std::string name_tmp = "##video_bitrate" + std::to_string(i);
+                if (ImGui::InputText(name_tmp.data(), video_config_[i].bitrate_str, sizeof(video_config_[i].bitrate_str), ImGuiInputTextFlags_CharsDecimal)) {
+                    //onSetVideoConfig();
+                }
+            }
 
             uint8_t image_quality_min = 0;
             uint8_t image_quality_max = 100;

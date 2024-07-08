@@ -11,6 +11,7 @@
 #include "playsdk/include/IClient.h"
 #include "private/include/IPrivClient.h"
 #include "playsdk/include/IPlaysdk.h"
+#include "jsoncpp/include/json.h"
 
 namespace playsdk {
 
@@ -34,6 +35,7 @@ private:
 
     void onSetVideoFormat(int32_t index);
     void onSetVideoConfig();
+    void onGetVideoConfig(Json::Value &config);
 
     void interaction_tab_login();
     void interaction_tab_video();
@@ -66,6 +68,7 @@ private:
     struct VideoConfig {
         std::vector<char*> resolution_str_list;
         std::vector<char*> bitrate_str_list;
+        std::vector<char*> bitrate_type_str_list;
         std::vector<char*> encode_str_list;
         int32_t resolution_index;
         int32_t bitrate_type_index;
@@ -86,6 +89,7 @@ private:
     };
 
     InteractionLogin interaction_login_;
+    std::vector<VideoConfig> video_config_;
 };
 
 }
