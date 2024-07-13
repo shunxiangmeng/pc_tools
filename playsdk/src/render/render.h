@@ -33,6 +33,7 @@ public:
         return current_pts_;
     }
     void setAudioCurrentPts(int64_t pts);
+    void setVideoRate(float rate);
     bool setTrackingBox(Json::Value data);
     void setClient(std::weak_ptr<IClient> client);
 private:
@@ -73,6 +74,7 @@ private:
     int64_t current_pts_ = 0;
     int64_t audio_current_pts_ = 0;
     float speed_ = 1.0f;
+    float video_rate_ = 0.0f;
 
     std::mutex tracking_box_list_mutex_;
     std::queue<std::shared_ptr<CurrentDetectResult>> tracking_box_list_;

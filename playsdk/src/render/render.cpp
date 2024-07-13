@@ -348,6 +348,10 @@ void Render::setAudioCurrentPts(int64_t pts) {
     audio_current_pts_ = pts;
 }
 
+void Render::setVideoRate(float rate) {
+    video_rate_ = rate;
+}
+
 bool Render::setTrackingBox(Json::Value data) {
     //tracef("%s\n", data.toStyledString().data());
     auto box = std::make_shared<CurrentDetectResult>();
@@ -368,11 +372,13 @@ bool Render::setTrackingBox(Json::Value data) {
 }
 
 void Render::readerTextInfo(GLFWwindow* window) {
+    int32_t display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(-1.0f, 0.85f, 0.0f));
     model = glm::rotate(model, glm::radians(-30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     float scale = 0.8f;
-    model = glm::scale(model, glm::vec3(scale, scale, 0.0f));
+    model = glm::scale(model, glm::vec3(display_h * scale / display_w, scale, 0.0f));
 
     glm::mat4 projection = glm::ortho(0.0f, window_width_*1.0f, 0.0f, window_height_*1.0f);
 
@@ -383,11 +389,11 @@ void Render::readerTextInfo(GLFWwindow* window) {
 
     model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(-0.3f, 0.85f, 0.0f));
-    model = glm::scale(model, glm::vec3(scale, scale, 0.0f));
+    model = glm::scale(model, glm::vec3(display_h * scale / display_w, scale, 0.0f));
 
     wchar_t video_pts[512] = {0};
-    swprintf(video_pts, L"pts:%lld %lld", current_pts_ / 100, audio_current_pts_ / 100);
-    text_.render(model, video_pts, wcslen(video_pts), glm::vec3(1.0, 1.0, 1.0));
+    swprintf(video_pts, L"pts:%lld %lld %0.1fkbps", current_pts_ / 100, audio_current_pts_ / 100, video_rate_);
+    text_.render(model, video_pts, wcslen(video_pts), glm::vec3(1.0, 1.0, 0.0));
 }
 
 void Render::renderTrackingBox(GLFWwindow* window) {

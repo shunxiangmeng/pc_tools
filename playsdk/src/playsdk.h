@@ -17,6 +17,8 @@
 #include "Client.h"
 #include "common/mediafiles/mp4/MP4Reader.h"
 #include "common/mediaframe/MediaFrameList.h"
+#include "infra/include/RateStatistics.h"
+#include "infra/include/Timer.h"
 
 namespace playsdk {
 
@@ -33,6 +35,7 @@ public:
     virtual bool setSpeed(float speed) override;
     virtual float speed() override;
     virtual bool setTrackingBox(Json::Value &data) override;
+    virtual float getVideoBitrate() override;
 
 private:
     bool startPlayfile();
@@ -56,6 +59,8 @@ private:
     DecodedFrameList audio_decoded_frame_queue_;
 
     float speed_ = 1.0f;
+    infra::RateStatistics video_rate_statistics_;
+    infra::Timer rate_timer_;
 };
     
 }

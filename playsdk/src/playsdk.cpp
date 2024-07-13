@@ -17,7 +17,7 @@ std::shared_ptr<IPlaysdk> IPlaysdk::create() {
     return std::make_shared<Playsdk>();
 }
 
-Playsdk::Playsdk() : playmode_(PlayModeLive) {
+Playsdk::Playsdk() : playmode_(PlayModeLive), video_rate_statistics_(1000/*ms*/){
     video_decoder_ = std::make_shared<Decoder>(video_decoded_frame_queue_);
     audio_decoder_ = std::make_shared<Decoder>(audio_decoded_frame_queue_);
     render_ = std::make_shared<Render>(video_decoded_frame_queue_);
@@ -92,6 +92,15 @@ bool Playsdk::setTrackingBox(Json::Value& data) {
     return render_->setTrackingBox(data);
 }
 
+float Playsdk::getVideoBitrate() {
+    infra::optional<int64_t> bits = video_rate_statistics_.Rate(infra::getCurrentTimeMs());
+    if (!bits.has_value()) {
+        return 0.0f;
+    }
+    float kbps= *bits * 1.0 / 1024.0f;
+    return kbps;
+}
+
 bool Playsdk::startPlayfile() {
     infof("start playfile %s\n", mp4_filename_.data());
     VideoFrameInfo videoinfo;
@@ -104,6 +113,12 @@ bool Playsdk::startPlayfile() {
     if (!audio_decoder_->init(audioinfo)) {
         return false;
     }
+
+    rate_timer_.start(1000, [this]() -> bool {
+        float video_rate = getVideoBitrate();
+        render_->setVideoRate(video_rate);
+        return true;
+    });
 
     std::thread([this]() {
         infof("start playfile thread\n");
@@ -132,6 +147,7 @@ bool Playsdk::startPlayfile() {
             MediaFrame to_decoded_frame = video_encoded_frame_queue_.front();
             if (video_decoder_->inputMediaFrame(to_decoded_frame)) {
                 //infof("video_encoded_frame_queue.size:%d\n", video_encoded_frame_queue_.size());
+                video_rate_statistics_.Update(to_decoded_frame.size(), infra::getCurrentTimeMs());
                 video_encoded_frame_queue_.pop_front();
             }
 
@@ -185,6 +201,7 @@ bool Playsdk::startPlayStream() {
                 }
                 if (video_decoder_->inputMediaFrame(to_decoded_video_frame)) {
                     //infof("video_encoded_frame_queue.size:%d\n", audio_encoded_frame_queue_.size());
+                    video_rate_statistics_.Update(to_decoded_video_frame.size(), infra::getCurrentTimeMs());
                     video_encoded_frame_queue_.pop_front();
                 }
             }

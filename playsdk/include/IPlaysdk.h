@@ -43,6 +43,8 @@ public:
     virtual float speed()  = 0;
 
     virtual bool setTrackingBox(Json::Value &data) = 0;
+
+    virtual float getVideoBitrate() = 0;
 };
 
 }
