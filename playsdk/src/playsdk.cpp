@@ -165,6 +165,13 @@ bool Playsdk::startPlayfile() {
 }
 
 bool Playsdk::startPlayStream() {
+
+    rate_timer_.start(1000, [this]() -> bool {
+        float video_rate = getVideoBitrate();
+        render_->setVideoRate(video_rate);
+        return true;
+    });
+    
     running_ = true;
     std::thread([this]() {
         infof("start playstream thread\n");

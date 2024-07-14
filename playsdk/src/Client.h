@@ -32,6 +32,8 @@ private:
     void login();
     void logout();
     void onLoginSucc();
+    void onSetVideoConfig(int32_t stream);
+
 
     void onSetVideoFormat(int32_t index);
     void onSetVideoConfig();
@@ -76,7 +78,8 @@ private:
         char fps_str[8];
         char gop_str[8];
         char bitrate_str[8];
-        uint8_t image_quality_;
+        uint8_t image_quality;
+        uint8_t bitrate_smooth;
     };
 
     struct InteractionLogin {
