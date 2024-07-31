@@ -87,7 +87,7 @@ private:
         char server_port[8];
         char username[32];
         char password[32];
-        InteractionLogin() : server_ip("192.168.2.53"), server_port("7000"), username("admin"), password("Ulucu888") {
+        InteractionLogin() : server_ip("172.16.9.54"), server_port("7000"), username("admin"), password("Ulucu888") {
         }
     };
 

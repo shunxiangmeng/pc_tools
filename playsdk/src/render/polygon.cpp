@@ -100,6 +100,29 @@ void Polygon::setPointLines(std::vector<std::vector<Position>>& polyons) {
     update_data_ = true;
 }
 
+void Polygon::setPoints(std::vector<Position>& points) {
+    points_ = points;
+    for (auto& position : points_) {
+        if (position.x > 1.0f) {
+            position.x = 1.0f;
+        }
+        if (position.x < 0.0f) {
+            position.x = 0.0f;
+        }
+        if (position.y > 1.0f) {
+            position.y = 1.0f;
+        }
+        if (position.y < 0.0f) {
+            position.y = 0.0f;
+        }
+
+        position.y = 1 - position.y;
+
+        position.x = center_scale_x_ * (position.x * 2 - 1);
+        position.y = center_scale_y_ * (position.y * 2 - 1);
+    }
+}
+
 bool Polygon::render() {
     if (polyons_.size() == 0) {
         return true;
@@ -129,6 +152,14 @@ bool Polygon::render() {
             }
             GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_DYNAMIC_DRAW));
             GL_CALL(glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0));
+        }
+
+        shader_->setUniformVec3("color", 1.0, 1.0, 0.0);
+        if (points_.size()) {
+            glPointSize(5.0f);
+            GL_CALL(glBufferData(GL_ARRAY_BUFFER, points_.size() * sizeof(Position), points_.data(), GL_DYNAMIC_DRAW));
+            GL_CALL(glVertexAttribPointer(position, sizeof(Position) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(Position), (const void*)0));
+            GL_CALL(glDrawArrays(GL_POINTS, 0, points_.size()));
         }
 
         //GL_CALL(glBindVertexArray(VAO_));

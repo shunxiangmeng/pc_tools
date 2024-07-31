@@ -252,7 +252,7 @@ GLFWwindow* Render::initWindowEnvironment() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "playsdk", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "playsdk", NULL, NULL);
     if (window == nullptr) {
         errorf("Failed to create GLFW window\n");
         return nullptr;
@@ -278,11 +278,13 @@ void Render::setCenterScale(GLFWwindow* window, int32_t video_width, int32_t vid
     int32_t window_height = 0;
     //glfwGetFramebufferSize(window, &window_width, &window_height);
     glfwGetWindowSize(window, &window_width, &window_height);
-    if (window_width == window_width_ && window_height == window_height_) {
+    if (window_width == window_width_ && window_height == window_height_ && video_width == video_width_ && video_height == video_height_) {
         return;
     }
     window_width_ = window_width;
     window_height_ = window_height;
+    video_width_ = video_width;
+    video_height_ = video_height;
 
     float video_aspect_ratio = 1.0f * video_width / video_height;
     float window_aspect_ration = 1.0f * window_width / window_height;
@@ -308,7 +310,14 @@ void Render::renderVideoFrame(GLFWwindow* window) {
         DecodedFrame frame = video_decoded_frame_queue_.front();
         int64_t now = infra::getCurrentTimeMs();
         //debugf("redner pts:%lld, now:%lld\n", frame.frame_->pkt_pts, now);
-        if (frame.frame_->pts <= now) {
+
+        if (pts_offset_ == 0) {
+            pts_offset_ = now - frame.frame_->pts;
+        }
+
+        int64_t real_pts = frame.frame_->pts + pts_offset_ + pts_render_offet_;
+
+        if (pts_offset_ == 0 || real_pts <= now) {   // 首帧立马显示
             if (video_decoded_frame_queue_.size() > 1) {
                 video_decoded_frame_queue_.pop();
             }
@@ -357,13 +366,26 @@ bool Render::setTrackingBox(Json::Value data) {
     auto box = std::make_shared<CurrentDetectResult>();
     box->timestamp = data["timestamp"].asUInt();
     for (uint32_t i = 0; i < data["targets"].size(); i++) {
+        Json::Value& item = data["targets"][i];
         Target target;
-        target.type = (TargetType)data["targets"][i]["type"].asInt();
-        target.id = data["targets"][i]["id"].asUInt();
-        target.rect.x = data["targets"][i]["x"].asFloat();
-        target.rect.y = data["targets"][i]["y"].asFloat();
-        target.rect.w = data["targets"][i]["w"].asFloat();
-        target.rect.h = data["targets"][i]["h"].asFloat();
+        target.type = (TargetType)item["type"].asInt();
+        target.id = item["id"].asUInt();
+        if (item.isMember("rect") && item["rect"].isObject()) {
+            target.rect.x = item["rect"]["x"].asFloat();
+            target.rect.y = item["rect"]["y"].asFloat();
+            target.rect.w = item["rect"]["w"].asFloat();
+            target.rect.h = item["rect"]["h"].asFloat();
+        }
+
+        if (item.isMember("points") && item["points"].isArray()) {
+            for (auto& point : item["points"]) {
+                Point p = { 0 };
+                p.x = point["x"].asFloat();
+                p.y = point["y"].asFloat();
+                target.points.push_back(p);
+            }
+        }
+
         box->targets.push_back(std::move(target));
     }
     std::lock_guard<std::mutex> guard(tracking_box_list_mutex_);
@@ -392,7 +414,7 @@ void Render::readerTextInfo(GLFWwindow* window) {
     model = glm::scale(model, glm::vec3(display_h * scale / display_w, scale, 0.0f));
 
     wchar_t video_pts[512] = {0};
-    swprintf(video_pts, L"pts:%lld %lld %0.1fkbps", current_pts_ / 100, audio_current_pts_ / 100, video_rate_);
+    swprintf(video_pts, L"pts:%lld %lld %lld %0.1fkbps", current_pts_, audio_current_pts_, target_current_pts_, video_rate_);
     text_.render(model, video_pts, wcslen(video_pts), glm::vec3(1.0, 1.0, 0.0));
 }
 
@@ -407,8 +429,15 @@ void Render::renderTrackingBox(GLFWwindow* window) {
     {
         std::lock_guard<std::mutex> guard(tracking_box_list_mutex_);
         if (tracking_box_list_.size()) {
-            result = tracking_box_list_.front();
-            tracking_box_list_.pop();
+            auto front = tracking_box_list_.front();
+            //tracef("target ts:%lld, video_pts:%lld\n", front->timestamp, current_pts_);
+            if (front->timestamp <= current_pts_) {
+                result = front;
+                target_current_pts_ = result->timestamp;
+                tracking_box_list_.pop();
+            } else {
+                target_current_pts_ = 0;
+            }
         }
     }
 
@@ -421,11 +450,21 @@ void Render::renderTrackingBox(GLFWwindow* window) {
             polyon.push_back({ t.rect.x + t.rect.w, t.rect.y + t.rect.h, 0.0f });
             polyon.push_back({ t.rect.x, t.rect.y + t.rect.h, 0.0f });
             polyons.push_back(polyon);
-        } 
+        }
     }
     //tracef("polyons size:%d\n", polyons.size());
     //adaptiveRender(polyons);
     polyon_.setPointLines(polyons);
+    
+    if (result) {
+        std::vector<Position> points;
+        for (auto& t : result->targets) {
+            for (auto& point : t.points) {
+                points.push_back({point.x, point.y, 0.0f});
+            }
+        }
+        polyon_.setPoints(points);
+    }
 }
 
 void Render::adaptiveRender(std::vector<std::vector<Position>>& polyons) {

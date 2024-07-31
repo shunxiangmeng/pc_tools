@@ -50,7 +50,9 @@ void Client::onMediaFrame(MediaFrameType type, MediaFrame& frame) {
 }
 
 bool Client::subscribeEvent() {
-    if (!event_client_->connect(server_ip_.data(), server_port_)) {
+    uint16_t port = atoi(interaction_login_.server_port);
+    if (!event_client_->connect(interaction_login_.server_ip, port)) {
+        errorf("event_client connect failed\n");
         return false;
     }
 
@@ -102,6 +104,8 @@ void Client::onLoginSucc() {
     Json::Value video_config;
     client_->getVideoConfig(video_config);
     onGetVideoConfig(video_config);
+
+    subscribeEvent();
 }
 
 void Client::onSetVideoFormat(int32_t index) {

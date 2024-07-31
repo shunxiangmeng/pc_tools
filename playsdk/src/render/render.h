@@ -61,6 +61,9 @@ private:
     int32_t window_width_;
     int32_t window_height_;
 
+    int32_t video_width_ = 0;
+    int32_t video_height_ = 0;
+
     GLuint VAO_ = 0;
     GLuint VBO_ = 0;
     GLuint EBO_ = 0;
@@ -73,8 +76,11 @@ private:
 
     int64_t current_pts_ = 0;
     int64_t audio_current_pts_ = 0;
+    int64_t target_current_pts_ = 0;
     float speed_ = 1.0f;
     float video_rate_ = 0.0f;
+    int64_t pts_offset_ = 0;
+    int64_t pts_render_offet_ = 80; //ms
 
     std::mutex tracking_box_list_mutex_;
     std::queue<std::shared_ptr<CurrentDetectResult>> tracking_box_list_;
