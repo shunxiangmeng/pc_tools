@@ -146,7 +146,7 @@ bool Text::initialize() {
     return true;
 }
 
-bool Text::render(const glm::mat4& model, const wchar_t* text, int32_t length, const glm::vec3& color) {
+bool Text::render(const glm::mat4& model, const wchar_t* text, int32_t length, const glm::vec3& color, int32_t x, int32_t y) {
     shader_->use();
     shader_->setUniformMat4("model", model);
     shader_->setUniformVec3("textColor", color);
@@ -155,8 +155,8 @@ bool Text::render(const glm::mat4& model, const wchar_t* text, int32_t length, c
     GL_CALL(glActiveTexture(GL_TEXTURE0));
 
     float scale = 0.0015f;
-    float xpos = 0.0f;
-    float ypos = 0.0f;
+    float xpos = x;
+    float ypos = y;
     for (int32_t i = 0; i < length; ++i) {
         wchar_t ch = text[i];
         if (ch == L' ') {

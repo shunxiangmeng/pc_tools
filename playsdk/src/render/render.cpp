@@ -397,9 +397,11 @@ void Render::readerTextInfo(GLFWwindow* window) {
     int32_t display_w, display_h;
     glfwGetFramebufferSize(window, &display_w, &display_h);
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(-1.0f, 0.85f, 0.0f));
-    model = glm::rotate(model, glm::radians(-30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    float scale = 0.8f;
+    float scale = 0.7f;
+    static float rotate_y = 0.0f;
+    rotate_y += 0.4f;
+    model = glm::translate(model, glm::vec3(-0.70f, 0.90f, 0.0f));
+    model = glm::rotate(model, glm::radians(rotate_y), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::scale(model, glm::vec3(display_h * scale / display_w, scale, 0.0f));
 
     glm::mat4 projection = glm::ortho(0.0f, window_width_*1.0f, 0.0f, window_height_*1.0f);
@@ -410,7 +412,7 @@ void Render::readerTextInfo(GLFWwindow* window) {
     text_.render(model, text.data(), text.length(), glm::vec3(1.0, 1.0, 1.0));
 
     model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(-0.3f, 0.85f, 0.0f));
+    model = glm::translate(model, glm::vec3(-0.3f, 0.90f, 0.0f));
     model = glm::scale(model, glm::vec3(display_h * scale / display_w, scale, 0.0f));
 
     wchar_t video_pts[512] = {0};
@@ -450,6 +452,22 @@ void Render::renderTrackingBox(GLFWwindow* window) {
             polyon.push_back({ t.rect.x + t.rect.w, t.rect.y + t.rect.h, 0.0f });
             polyon.push_back({ t.rect.x, t.rect.y + t.rect.h, 0.0f });
             polyons.push_back(polyon);
+
+            //显示ID
+            float y = 1 - (t.rect.y - 0.005);
+            y = center_scale_y_ * (y * 2 - 1);
+            float x = center_scale_x_ * (t.rect.x * 2 - 1);
+
+            int32_t display_w, display_h;
+            glfwGetFramebufferSize(window, &display_w, &display_h);
+            glm::mat4 model = glm::mat4(1.0f);
+            float scale = 0.6f;
+            model = glm::translate(model, glm::vec3(x, y, 0.0f));
+            model = glm::scale(model, glm::vec3(display_h * scale / display_w, scale, 0.0f));
+            wchar_t target_id[32] = { 0 };
+            swprintf(target_id, L"%02d", t.id);
+            text_.render(model, target_id, wcslen(target_id), glm::vec3(0.5, 1.0, 0.0));
+
         }
     }
     //tracef("polyons size:%d\n", polyons.size());

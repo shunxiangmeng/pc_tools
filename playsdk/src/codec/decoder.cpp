@@ -95,7 +95,7 @@ bool Decoder::running() const {
 }
 
 bool Decoder::inputMediaFrame(MediaFrame frame) {
-    if (!initailed_ || frame.empty() || decoded_frame_queue_.size() > 5) {
+    if (!initailed_ || frame.empty() || decoded_frame_queue_.size() > 2) {
         return false;
     }
 

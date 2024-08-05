@@ -31,7 +31,7 @@ public:
     Text();
     ~Text();
     bool initialize();
-    bool render(const glm::mat4& model, const wchar_t* text, int32_t length, const glm::vec3& color);
+    bool render(const glm::mat4& model, const wchar_t* text, int32_t length, const glm::vec3& color, int32_t x = 0, int32_t y = 0);
 private:
     bool initShader();
     void loadFaces(const wchar_t* text, int32_t length);
