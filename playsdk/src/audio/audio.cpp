@@ -41,7 +41,12 @@ bool Audio::initialize() {
             alcMakeContextCurrent(context);
         } else {
             alcCloseDevice(device);
+            errorf("alcCreateContext error\n");
+            return false;
         }
+    } else {
+        errorf("alcOpenDevice error\n");
+        return false;
     }
 
     output_format_ = AL_FORMAT_STEREO16;
