@@ -37,6 +37,7 @@ include_directories(${PROJECT_SOURCE_DIR}/common/thirdparty/msgpack)
 include_directories(${PROJECT_SOURCE_DIR}/common/thirdparty/freetype-2.13.0/include)
 include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles)
 include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles/common/libmov/include)
+include_directories(${PROJECT_SOURCE_DIR}/common/common/mediafiles/common/libmpeg/include)
 include_directories(${PROJECT_SOURCE_DIR}/common/middleware)
 include_directories(${PROJECT_SOURCE_DIR}/applicaton)
 
