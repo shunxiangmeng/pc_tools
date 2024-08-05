@@ -322,6 +322,12 @@ void Render::renderVideoFrame(GLFWwindow* window) {
                 video_decoded_frame_queue_.pop();
             }
         }
+
+        if (real_pts < now - 20) {
+            int64_t first_frame_pts = video_decoded_frame_queue_.front().frame_->pts + pts_offset_ + pts_render_offet_;
+            warnf("frame late %3lld ms, size():%d, this_frame_pts:%lld, first_frame_pts:%lld, now:%lld\n", now - real_pts, video_decoded_frame_queue_.size(), real_pts, first_frame_pts, now);
+        }
+
         current_pts_ = frame.frame_->pts;
 
         shader_->use();
@@ -364,7 +370,7 @@ void Render::setVideoRate(float rate) {
 bool Render::setTrackingBox(Json::Value data) {
     //tracef("%s\n", data.toStyledString().data());
     auto box = std::make_shared<CurrentDetectResult>();
-    box->timestamp = data["timestamp"].asUInt();
+    box->timestamp = data["timestamp"].asInt64();
     for (uint32_t i = 0; i < data["targets"].size(); i++) {
         Json::Value& item = data["targets"][i];
         Target target;
@@ -567,8 +573,6 @@ bool Render::initGui(GLFWwindow* window) {
 
     return true;
 }
-
-#define RENDER_FPS 65
 
 void Render::run() {
     warnf("render thread start\n");

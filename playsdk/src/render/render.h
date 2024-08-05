@@ -22,6 +22,8 @@
 
 namespace playsdk {
 
+#define RENDER_FPS 65
+
 class Render : public infra::Thread {
 public:
     Render(DecodedFrameList& video_decoded_frame_queue);
@@ -80,7 +82,7 @@ private:
     float speed_ = 1.0f;
     float video_rate_ = 0.0f;
     int64_t pts_offset_ = 0;
-    int64_t pts_render_offet_ = 80; //ms
+    int64_t pts_render_offet_ = 200; //ms
 
     std::mutex tracking_box_list_mutex_;
     std::queue<std::shared_ptr<CurrentDetectResult>> tracking_box_list_;

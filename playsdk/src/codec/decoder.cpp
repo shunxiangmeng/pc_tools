@@ -95,7 +95,7 @@ bool Decoder::running() const {
 }
 
 bool Decoder::inputMediaFrame(MediaFrame frame) {
-    if (!initailed_ || frame.empty() || decoded_frame_queue_.size() > 2) {
+    if (!initailed_ || frame.empty() || decoded_frame_queue_.size() >= 5) {
         return false;
     }
 
@@ -164,7 +164,7 @@ bool Decoder::inputMediaFrame(MediaFrame frame) {
         } else {
             int width = av_codec_context_->width;
             int height = av_codec_context_->height;
-            //infof("video width:%d, height:%d, pts:%lld\n", width, height, decoded_frame->pkt_pts);
+            //infof("video width:%d, height:%d, dts:%lld, pts:%lld\n", width, height, decoded_frame->pkt_dts, decoded_frame->pkt_pts);
             DecodedFrame vframe(decoded_frame);
             decoded_frame_queue_.push(vframe);
             //infof("video decoded_frame_size:%d\n", decoded_frame_queue_.size());

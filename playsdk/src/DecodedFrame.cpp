@@ -50,6 +50,7 @@ DecodedFrameList::~DecodedFrameList() {
 }
 
 int32_t DecodedFrameList::size() {
+    std::lock_guard<std::recursive_mutex> guard(mutex_);
     return (int32_t)decoded_frame_queue_.size();
 }
 
@@ -58,18 +59,18 @@ void DecodedFrameList::push(DecodedFrame frame) {
     decoded_frame_queue_.push(frame);
 }
 void DecodedFrameList::pop() {
+    std::lock_guard<std::recursive_mutex> guard(mutex_);
     if (decoded_frame_queue_.size() == 0) {
         return;
     }
-    std::lock_guard<std::recursive_mutex> guard(mutex_);
     decoded_frame_queue_.pop();
 }
 
 DecodedFrame DecodedFrameList::front() {
+    std::lock_guard<std::recursive_mutex> guard(mutex_);
     if (decoded_frame_queue_.size() == 0) {
         return DecodedFrame();
     }
-    std::lock_guard<std::recursive_mutex> guard(mutex_);
     DecodedFrame frame = decoded_frame_queue_.front();
     return frame;
 }
