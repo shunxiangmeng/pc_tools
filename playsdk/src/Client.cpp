@@ -61,6 +61,11 @@ bool Client::subscribeEvent() {
         playsdk_->setTrackingBox(data);
     });
 
+    event_client_->subscribeEvent("detect_region", [this](Json::Value& data) {
+        //tracef("onEvent:%s\n", data.toStyledString().data());
+        playsdk_->setDetectRegion(data);
+    });
+
     return true;
 }
 

@@ -92,6 +92,10 @@ bool Playsdk::setTrackingBox(Json::Value& data) {
     return render_->setTrackingBox(data);
 }
 
+bool Playsdk::setDetectRegion(Json::Value& data) {
+    return render_->setDetectRegion(data);
+}
+
 float Playsdk::getVideoBitrate() {
     infra::optional<int64_t> bits = video_rate_statistics_.Rate(infra::getCurrentTimeMs());
     if (!bits.has_value()) {

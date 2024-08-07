@@ -23,6 +23,7 @@ public:
 
     bool initialize();
     void setPointLines(std::vector<std::vector<Position>> &polyons);
+    void setPointLines2(std::vector<std::vector<Position>>& polyons);
     void setPoints(std::vector<Position>& points);
     bool render();
     void setCenterScale(float x, float y);
@@ -35,6 +36,7 @@ private:
     GLuint VBO_ = 0;
     GLuint EBO_ = 0;
     std::vector<std::vector<Position>> polyons_;
+    std::vector<std::vector<Position>> polyons2_;
     std::vector<Position> points_;
     bool update_data_ = false;
 

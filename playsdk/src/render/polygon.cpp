@@ -100,6 +100,31 @@ void Polygon::setPointLines(std::vector<std::vector<Position>>& polyons) {
     update_data_ = true;
 }
 
+void Polygon::setPointLines2(std::vector<std::vector<Position>>& polyons) {
+    polyons2_ = polyons;
+    for (auto& polygon : polyons2_) {
+        for (auto& position : polygon) {
+            if (position.x > 1.0f) {
+                position.x = 1.0f;
+            }
+            if (position.x < 0.0f) {
+                position.x = 0.0f;
+            }
+            if (position.y > 1.0f) {
+                position.y = 1.0f;
+            }
+            if (position.y < 0.0f) {
+                position.y = 0.0f;
+            }
+
+            position.y = 1 - position.y;
+
+            position.x = center_scale_x_ * (position.x * 2 - 1);
+            position.y = center_scale_y_ * (position.y * 2 - 1);
+        }
+    }
+}
+
 void Polygon::setPoints(std::vector<Position>& points) {
     points_ = points;
     for (auto& position : points_) {
@@ -124,7 +149,7 @@ void Polygon::setPoints(std::vector<Position>& points) {
 }
 
 bool Polygon::render() {
-    if (polyons_.size() == 0) {
+    if (polyons_.size() == 0 && polyons2_.size() == 0) {
         return true;
     }
 
@@ -147,6 +172,18 @@ bool Polygon::render() {
             GL_CALL(glBufferData(GL_ARRAY_BUFFER, pol.size() * sizeof(Position), pol.data(), GL_DYNAMIC_DRAW));
             GL_CALL(glVertexAttribPointer(position, sizeof(Position) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(Position), (const void*)0));
             
+            for (unsigned int i = 0; i < pol.size(); i++) {
+                indices.push_back(i);
+            }
+            GL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_DYNAMIC_DRAW));
+            GL_CALL(glDrawElements(GL_LINE_LOOP, indices.size(), GL_UNSIGNED_INT, 0));
+        }
+
+        shader_->setUniformVec3("color", 0.0, 1.0, 0.0);
+        for (auto& pol : polyons2_) {
+            GL_CALL(glBufferData(GL_ARRAY_BUFFER, pol.size() * sizeof(Position), pol.data(), GL_DYNAMIC_DRAW));
+            GL_CALL(glVertexAttribPointer(position, sizeof(Position) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(Position), (const void*)0));
+
             for (unsigned int i = 0; i < pol.size(); i++) {
                 indices.push_back(i);
             }

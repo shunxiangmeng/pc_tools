@@ -44,6 +44,8 @@ public:
 
     virtual bool setTrackingBox(Json::Value &data) = 0;
 
+    virtual bool setDetectRegion(Json::Value &data) = 0;
+
     virtual float getVideoBitrate() = 0;
 };
 

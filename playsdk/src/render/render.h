@@ -36,7 +36,8 @@ public:
     }
     void setAudioCurrentPts(int64_t pts);
     void setVideoRate(float rate);
-    bool setTrackingBox(Json::Value data);
+    bool setTrackingBox(Json::Value& data);
+    bool setDetectRegion(Json::Value& date);
     void setClient(std::weak_ptr<IClient> client);
 private:
     virtual void run() override;
@@ -86,6 +87,7 @@ private:
 
     std::mutex tracking_box_list_mutex_;
     std::queue<std::shared_ptr<CurrentDetectResult>> tracking_box_list_;
+    std::vector<DetectRegion> detec_regions_;
 };
 
 typedef struct {

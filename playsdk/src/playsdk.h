@@ -35,6 +35,7 @@ public:
     virtual bool setSpeed(float speed) override;
     virtual float speed() override;
     virtual bool setTrackingBox(Json::Value &data) override;
+    virtual bool setDetectRegion(Json::Value& data) override;
     virtual float getVideoBitrate() override;
 
 private:

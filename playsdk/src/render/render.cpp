@@ -367,7 +367,7 @@ void Render::setVideoRate(float rate) {
     video_rate_ = rate;
 }
 
-bool Render::setTrackingBox(Json::Value data) {
+bool Render::setTrackingBox(Json::Value& data) {
     //tracef("%s\n", data.toStyledString().data());
     auto box = std::make_shared<CurrentDetectResult>();
     box->timestamp = data["timestamp"].asInt64();
@@ -396,6 +396,35 @@ bool Render::setTrackingBox(Json::Value data) {
     }
     std::lock_guard<std::mutex> guard(tracking_box_list_mutex_);
     tracking_box_list_.push(box);
+    return true;
+}
+
+bool Render::setDetectRegion(Json::Value& data) {
+    for (uint32_t i = 0; i < data["regions"].size(); i++) {
+        DetectRegion region;
+
+        Json::Value& item = data["regions"][i];
+        if (item.isMember("points") && item["points"].isArray()) {
+            for (auto& point : item["points"]) {
+                Point p = { 0 };
+                p.x = point["x"].asFloat();
+                p.y = point["y"].asFloat();
+                region.points.push_back(p);
+            }
+        }
+        detec_regions_.push_back(region);
+    }
+
+    //检测区域
+    std::vector<std::vector<Position>> polyons;
+    for (auto& region : detec_regions_) {
+        std::vector<Position> polyon;
+        for (auto &it : region.points) {
+            polyon.push_back({ it.x, it.y, 0.0f });
+        }
+        polyons.push_back(polyon);
+    }
+    polyon_.setPointLines2(polyons);
     return true;
 }
 
@@ -460,7 +489,7 @@ void Render::renderTrackingBox(GLFWwindow* window) {
             polyons.push_back(polyon);
 
             //显示ID
-            float y = 1 - (t.rect.y - 0.005);
+            float y = 1 - (t.rect.y + 0.025);  //显示在右上角框内
             y = center_scale_y_ * (y * 2 - 1);
             float x = center_scale_x_ * (t.rect.x * 2 - 1);
 
@@ -476,6 +505,7 @@ void Render::renderTrackingBox(GLFWwindow* window) {
 
         }
     }
+
     //tracef("polyons size:%d\n", polyons.size());
     //adaptiveRender(polyons);
     polyon_.setPointLines(polyons);
